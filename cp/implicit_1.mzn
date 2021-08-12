@@ -18,6 +18,11 @@ constraint diffn(x, y, cwidth, cheight);
 % height of circuit is the highest placed circuit top-left corner
 var int: HEIGHT = max (e in ELEMENTS) (y[e] + cheight[e]);
 
+% implicit constraint: summing circuits width must be less or equal than board width for each board row
+constraint forall (h in 0..HEIGHT) (sum (e in ELEMENTS where cheight[e] + y[e] > h /\ y[e] <= h) (cwidth[e]) <= WIDTH);
+% implicit constraint: summing circuits height must be less or equal than height width for each board column
+constraint forall (w in 0..WIDTH) (sum (e in ELEMENTS where cwidth[e] + x[e] > w /\ x[e] <= w) (cheight[e]) <= HEIGHT);
+
 solve minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) " ];
