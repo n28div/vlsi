@@ -53,9 +53,8 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, **kwar
     **kwargs: Additional arguments passed to plot_vlsi function
   """
   stat = result.statistics
-  seconds = stat["solveTime"].microseconds / 10**6
   print("Instance solved")
-  print("Took: %fs to find %d solutions" % (seconds, stat["nSolutions"]))
+  print("Took: %ss to find %d solutions" % (stat["solveTime"].total_seconds(), stat["nSolutions"]))
   print("Nodes: %d - failures %d" % (stat["nodes"], stat["failures"]))
 
 
