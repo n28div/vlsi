@@ -4,8 +4,8 @@
 * [x] Preprocess text files and feed them to minizinc model
 * [x] Visualize results using plots 
 * [x] export plots to use in the report
-- [ ]  Configure to batch run models with all instances and record statistics
-- [ ]  Graph the statistics
+- [x]  Configure to batch run models with all instances and record statistics
+- [x]  Graph the statistics
 
 ### Minizinc models
 * [x] Naive model (pt 1 in project paper) **naive_model.mzn**
