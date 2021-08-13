@@ -1,6 +1,9 @@
 from typing import Dict, Union, List
 from glob import glob
+import typing
+from matplotlib.pyplot import title
 from minizinc import Instance, Model, Solver, Result
+from utils.plot import plot_vlsi
 
 def enumerate_models() -> List[str]:
   """
@@ -41,18 +44,24 @@ def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
 
   return d
 
-def report_result(result: Result):
+def report_result(data: Dict[str, Union[int, List[int]]], result: Result, **kwargs):
   """Reports to the user the result from a minizinc run
 
-  Args: result (Result): Result object from minizinc instance
+  Args: 
+    data (Dict[str, Union[int, List[int]]]): Input data for the minizinc instance
+    result (Result): Result object from minizinc instance
+    **kwargs: Additional arguments passed to plot_vlsi function
   """
   stat = result.statistics
-
   seconds = stat["solveTime"].microseconds / 10**6
-
   print("Instance solved")
   print("Took: %fs to find %d solutions" % (seconds, stat["nSolutions"]))
   print("Nodes: %d - failures %d" % (stat["nodes"], stat["failures"]))
+
+
+  solution_x = result[-1, "x"]
+  solution_y = result[-1, "y"]
+  plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, **kwargs)
 
 
 if __name__ == "__main__":
@@ -88,4 +97,4 @@ if __name__ == "__main__":
       # run model
       result = mzn_instance.solve(intermediate_solutions=True)
 
-      report_result(result)
+      report_result(data, result, title="%s | %s" % (m, i))

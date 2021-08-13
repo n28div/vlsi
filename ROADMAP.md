@@ -1,8 +1,9 @@
 ## CP
 
 ### Python-stuff
-- [ ]  Preprocess text files and feed them to minizinc model
-- [ ]  Visualize results using plots and export to use in the report
+* [x] Preprocess text files and feed them to minizinc model
+* [x] Visualize results using plots 
+* [x] export plots to use in the report
 - [ ]  Configure to batch run models with all instances and record statistics
 - [ ]  Graph the statistics
 
