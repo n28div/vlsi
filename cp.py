@@ -6,6 +6,8 @@ from minizinc import Instance, Model, Solver, Result
 from utils.plot import plot_vlsi
 from natsort import natsorted
 import sys, os
+import wandb
+
 
 def enumerate_models() -> List[str]:
   """
@@ -60,14 +62,16 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, **kwar
   print("Took: %ss to find %d solutions" % (stat["solveTime"].total_seconds(), stat["nSolutions"]))
   print("Nodes: %d - failures %d" % (stat["nodes"], stat["failures"]))
 
-
   solution_x = result[-1, "x"]
   solution_y = result[-1, "y"]
   plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, **kwargs)
 
+  return stat["solveTime"].total_seconds(), stat["nSolutions"], stat["nodes"], stat["failures"]
+
 
 if __name__ == "__main__":
   try:
+
     import argparse
     # define CLI arguments
     parser = argparse.ArgumentParser(description="Run minizinc vlsi solving method")
@@ -84,9 +88,17 @@ if __name__ == "__main__":
     instances = args.instances if len(args.instances) > 0 else enumerate_instances()
     # TODO: Solver config
     gecode = Solver.lookup("gecode")
-
     # execute each model
     for m in models:
+      run = wandb.init(project='vlsi', entity='fatlads', tags=[m])
+      run.name = m
+      #custom x-axos
+      wandb.define_metric("instance number")
+      #set variables for which this metric holds
+      wandb.define_metric("*", step_metric='instance number')
+      config = wandb.config
+      #counter for custom step
+      instance_num = 1
       for i in instances:
         data = txt2dict(i)
         #create model new everytime so we can change parameter value
@@ -99,7 +111,27 @@ if __name__ == "__main__":
         # run model
         result = mzn_instance.solve(intermediate_solutions=True)
 
-        report_result(data, result, title="%s | %s" % (m, i))
+        #show report results
+        res = report_result(data, result, title="%s | %s" % (m, i), show=False)
+        solved_time = res[0]
+        solutions = res[1]
+        nodes = res[2]
+        failures = res[3]
+        #log results
+        wandb.log({
+          "time taken": solved_time,
+          "solutions": solutions,
+          "nodes": nodes,
+          "failures": failures,
+          "instance number": instance_num
+        })
+        instance_num += 1
+      #finish run with this model, select next model
+      run.finish()
+      #reset counter for custom step
+      instance_num = 1
+
+
   except KeyboardInterrupt:
         print('Interrupted')
         try:
