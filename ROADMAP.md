@@ -12,9 +12,9 @@
 * [x] Implicit contraint (pt 2 in project paper): elements on rows should sum up to board width in any solution, same for height **implicit_1.mzn**
 * [x] Naive boundary optimization: we can set up worst scenario lower (tallest circuit to be placed) and upper bound (circuits stacked vertically in one column) **naive_boundaries.mzn**
 * [x] Additional implicit contraint: for example area of the board will be bigger or equal to the sum of rectangles areas **implicit_2.mzn**
-- [ ] Convert constraints as much as possible to global contraints (pt 3 in project paper)
+- [ ] Convert constraints as much as possible to global contraints (pt 3 in project paper) (**cant really come up with a better formulation of constraints not using globals, globalizer doesnt give any hint too**)
 - [ ] Smart boundary optimization: idk about this
 - [ ] Board symmetry breaking: implement boolean representation nqueens-like, break the 4 symmetries: main diagonal, secondary diagonal, vertical flip, horizontal flip (pt 4 in project paper)
-- [ ] Value symmetry braking: when placing circuits of the exam shape it doesn't matter which one is choosed first
+- [ ] Value symmetry breaking: when placing circuits of the board, it doesn't matter which one is choosed first if there's 2+ having the same size
 - [ ] Search optimization: place big circuits first and try fitting smallest one then
 - [ ] Minimization dual idea: minimize the difference *board_area - circuits_summed_area*
