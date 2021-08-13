@@ -1,11 +1,11 @@
 include "globals.mzn";
 
-int: WIDTH = 8; % width of the circuit
-int: N = 4; % number of elements in the input file
+int: WIDTH; % width of the circuit
+int: N; % number of elements in the input file
 
 set of int: ELEMENTS = 1..N;
-array[ELEMENTS] of int: cwidth = [3, 3, 5, 5];
-array[ELEMENTS] of int: cheight = [3, 5, 3, 5];
+array[ELEMENTS] of int: cwidth;
+array[ELEMENTS] of int: cheight;
 
 % compute worst case scenario boundaries for lower and upper bounds in maximum height search
 % worst we can do is stacking all the circuits vertically

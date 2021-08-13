@@ -1,11 +1,11 @@
 include "globals.mzn";
 
-int: WIDTH = 8; % width of the circuit
-int: N = 4; % number of elements in the input file
+int: WIDTH; % width of the circuit
+int: N; % number of elements in the input file
 
 set of int: ELEMENTS = 1..N;
-array[ELEMENTS] of int: cwidth = [3, 3, 5, 5];
-array[ELEMENTS] of int: cheight = [3, 5, 3, 5];
+array[ELEMENTS] of int: cwidth;
+array[ELEMENTS] of int: cheight;
 
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
 array[ELEMENTS] of var 0..1000: y; % circuit y position, 0-indexed
