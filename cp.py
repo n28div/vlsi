@@ -47,7 +47,47 @@ def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
     d["cwidth"] = list(map(lambda d: int(d.split(" ")[0]), cdim))
     d["cheight"] = list(map(lambda d: int(d.split(" ")[1]), cdim))
 
+    # smarter boundary on height
+    d["HBOUND"] = determine_hbound(d["N"], d["cwidth"], d["cheight"], 0, d["WIDTH"], 0, 0)
+
   return d
+
+
+def determine_hbound(n: int, cwidth: List[int], cheight: List[int],
+                     heightacc: int, widthacc: int, it: int, count: int) -> int:
+  """Determines a somewhat smart boundary on the height parameter, tries to fit the
+  lower row of the board with as much height as possible
+
+  Args:
+    n: amount of pieces to be tried
+    cwidth: list of widths of pieces to be tried
+    cheight: list of heights of pieces to be tried
+    heightacc: accumulator for height of pieces that are placed
+    widthacc: accumulator for remaining width to place pieces
+    it: iterator
+    count: amount of pieces placed at bottom row
+  """
+  #check if current it fits
+  if(it==n):
+    return heightacc
+
+  if(widthacc <= 0):
+    return heightacc
+  #if yes, max (fit, no fit)
+  #if no, (no fit)
+  if(widthacc-cwidth[it]>=0):
+                #fit
+    if(count>0):
+      #for every piece added after the first piece, calculate leftover height
+      h_added = cheight[it]
+    else:
+      h_added = 0
+    return max(determine_hbound(n, cwidth, cheight, heightacc+h_added, widthacc-cwidth[it], it+1, count+1),
+                #don't fit
+               determine_hbound(n, cwidth, cheight, heightacc, widthacc, it+1, count))
+  else:
+    return (determine_hbound(n, cwidth, cheight, heightacc, widthacc, it+1, count))
+
 
 def report_result(data: Dict[str, Union[int, List[int]]], result: Result, **kwargs):
   """Reports to the user the result from a minizinc run
@@ -106,13 +146,14 @@ if __name__ == "__main__":
         mzn_instance = Instance(gecode, mzn_model)
         # set data variables on instance
         for k, v in data.items():
+          print(k, v)
           mzn_instance[k] = v
 
         # run model
         result = mzn_instance.solve(intermediate_solutions=True)
 
         #show report results
-        res = report_result(data, result, title="%s | %s" % (m, i), show=False)
+        res = report_result(data, result, title="%s | %s" % (m, i), show=True)
         solved_time = res[0]
         solutions = res[1]
         nodes = res[2]
