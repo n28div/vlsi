@@ -7,8 +7,26 @@ int: N; % number of elements in the input file
 set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
 array[ELEMENTS] of int: cheight;
-int: HBOUND;
 
+
+
+function int: determine_hbound(int: n, array[ELEMENTS] of int: widths, array[ELEMENTS] of int: heights, int: heightacc, int: widthacc, int: it, int: count) = (
+  if it > n then heightacc
+  elseif widthacc <= 0 then heightacc
+  elseif widthacc - widths[it] >= 0 then
+    if count > 0 then let{int :h_added = heightacc+heights[it]} in
+      max(determine_hbound(n, widths, heights, h_added, widthacc-widths[it], it+1, count+1),
+        determine_hbound(n, widths, heights, heightacc, widthacc, it+1, count))
+    else
+      max(determine_hbound(n, widths, heights, heightacc, widthacc-widths[it], it+1, count+1),
+        determine_hbound(n, widths, heights, heightacc, widthacc, it+1, count))
+    endif
+  else
+    determine_hbound(n, widths, heights, heightacc, widthacc, it+1, count)
+  endif
+);
+                                      
+int: HBOUND = determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
 % compute worst case scenario boundaries for lower and upper bounds in maximum height search
 % worst we can do is stacking all the circuits vertically
 int: y_ub = sum (e in ELEMENTS) (cheight[e]) - HBOUND; % UNCOMMENT FOR PYTHON
