@@ -2,7 +2,7 @@ include "globals.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file
-%int: HBOUND; %parameter to substract from maximum hbound, UNCOMMENT FOR PYTHON
+int: HBOUND; %parameter to substract from maximum hbound, UNCOMMENT FOR PYTHON
 
 set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
@@ -10,8 +10,8 @@ array[ELEMENTS] of int: cheight;
 
 % compute worst case scenario boundaries for lower and upper bounds in maximum height search
 % worst we can do is stacking all the circuits vertically
-%int: y_ub = sum (e in ELEMENTS) (cheight[e]) - HBOUND; % UNCOMMENT FOR PYTHON
-int: y_ub = sum (e in ELEMENTS) (cheight[e]); % UNCOMMENT FOR MINIZINC-IDE
+int: y_ub = sum (e in ELEMENTS) (cheight[e]) - HBOUND; % UNCOMMENT FOR PYTHON
+%int: y_ub = sum (e in ELEMENTS) (cheight[e]); % UNCOMMENT FOR MINIZINC-IDE
 % lower bound can naively be implemented by relaxing the board fixed width and stacking all circuits horizontally
 % thus the min height is equal to the tallest circuit in the board
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
