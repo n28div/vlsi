@@ -43,9 +43,9 @@ array[0..WIDTH, 0..y_ub] of var bool: b;
 constraint forall(e in ELEMENTS) (b[x[e], y[e]]);
 
 % horizontal flipping of the circuit
-constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..WIDTH, j in reverse(0..y_ub)]);
+constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..WIDTH, j in reverse(0..y_ub)]) /\
 % vertical flipping of the circuit
-constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..WIDTH), j in 0..y_ub]);
+lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..WIDTH), j in 0..y_ub]);
 
 solve minimize HEIGHT;
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];

@@ -153,7 +153,7 @@ if __name__ == "__main__":
         result = mzn_instance.solve(intermediate_solutions=True)
 
         #show report results
-        res = report_result(data, result, title="%s | %s" % (m, i), show=True)
+        res = report_result(data, result, title="%s | %s" % (m, i), show=False)
         solved_time = res[0]
         solutions = res[1]
         nodes = res[2]
