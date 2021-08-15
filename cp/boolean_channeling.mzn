@@ -2,7 +2,7 @@ include "globals.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file
-int: HBOUND; %parameter to substract from maximum hbound
+%int: HBOUND; %parameter to substract from maximum hbound, UNCOMMENT FOR PYTHON
 
 set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
@@ -10,7 +10,8 @@ array[ELEMENTS] of int: cheight;
 
 % compute worst case scenario boundaries for lower and upper bounds in maximum height search
 % worst we can do is stacking all the circuits vertically
-int: y_ub = sum (e in ELEMENTS) (cheight[e]) - HBOUND;
+%int: y_ub = sum (e in ELEMENTS) (cheight[e]) - HBOUND; % UNCOMMENT FOR PYTHON
+int: y_ub = sum (e in ELEMENTS) (cheight[e]); % UNCOMMENT FOR MINIZINC-IDE
 % lower bound can naively be implemented by relaxing the board fixed width and stacking all circuits horizontally
 % thus the min height is equal to the tallest circuit in the board
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
@@ -37,15 +38,18 @@ var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
 constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
-
 % boolean channeling: each circuit bottom-left index is encoded as true in a matrix representing the whole board
-array[0..WIDTH, 0..y_ub] of var bool: b;
-constraint forall(e in ELEMENTS) (b[x[e], y[e]]);
+array[0..y_ub, 0..WIDTH] of var bool: b;
+%constraint forall (i in 0..y_ub, j in 0..WIDTH) (b[i, j] <-> exists (e in ELEMENTS) (x[e] = j /\ y[e] = i));
+constraint forall(e in ELEMENTS) (b[y[e], x[e]]);
 
 % horizontal flipping of the circuit
-constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..WIDTH, j in reverse(0..y_ub)]);
+constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..y_ub, j in reverse(0..WIDTH)]);
 % vertical flipping of the circuit
-constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..WIDTH), j in 0..y_ub]);
+constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..y_ub), j in 0..WIDTH]);
 
 solve minimize HEIGHT;
+
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
+%output [ if fix(b[i, j]) then "X" else "." endif ++
+%         if j == WIDTH then "\n" else "" endif | i in 0..fix(y_ub), j in 0..WIDTH];
