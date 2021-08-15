@@ -1,4 +1,4 @@
-WIDTH = 8;
-N = 4;
-cwidth = [3, 3, 5, 5];
-cheight = [3, 5, 3, 5];
+WIDTH = 10;
+N = 6;
+cwidth = [3, 3, 3, 3, 4, 4];
+cheight = [3, 4, 6, 7, 4, 6];
