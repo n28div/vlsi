@@ -40,7 +40,7 @@ constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
 % boolean channeling: each circuit bottom-left index is encoded as true in a matrix representing the whole board
 array[0..WIDTH, 0..y_ub] of var bool: b;
-constraint forall(i in 0..WIDTH, j in 0..y_ub) (b[i, j] <-> exists (e in ELEMENTS) (x[e] == i /\ y[e] == j));
+constraint forall(e in ELEMENTS) (b[x[e], y[e]]);
 
 % horizontal flipping of the circuit
 constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..WIDTH, j in reverse(0..y_ub)]);
@@ -48,4 +48,4 @@ constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..WIDTH, j in reverse(0..y_ub
 constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..WIDTH), j in 0..y_ub]);
 
 solve minimize HEIGHT;
-output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n \( (1..(card(array2set(y)) - 1)) )" ];
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
