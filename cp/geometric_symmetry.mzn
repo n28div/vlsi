@@ -2,7 +2,7 @@ include "globals.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file
-%int: HBOUND; %parameter to substract from maximum hbound, UNCOMMENT FOR PYTHON
+int: HBOUND; %parameter to substract from maximum hbound, UNCOMMENT FOR PYTHON
 
 set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;

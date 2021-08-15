@@ -1,13 +1,10 @@
 from typing import Dict, Union, List
 from glob import glob
-import typing
-from matplotlib.pyplot import title
 from minizinc import Instance, Model, Solver, Result
 from utils.plot import plot_vlsi
 from natsort import natsorted
 import sys, os
 import wandb
-
 
 def enumerate_models() -> List[str]:
   """
@@ -127,7 +124,7 @@ if __name__ == "__main__":
     # load specified instances or load all instances if left empty
     instances = args.instances if len(args.instances) > 0 else enumerate_instances()
     # TODO: Solver config
-    gecode = Solver.lookup("gecode")
+    gecode = Solver.lookup("chuffed")
     # execute each model
     for m in models:
       run = wandb.init(project='vlsi', entity='fatlads', tags=[m])
@@ -146,7 +143,6 @@ if __name__ == "__main__":
         mzn_instance = Instance(gecode, mzn_model)
         # set data variables on instance
         for k, v in data.items():
-          print(k, v)
           mzn_instance[k] = v
 
         # run model
