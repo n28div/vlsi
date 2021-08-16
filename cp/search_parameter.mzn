@@ -1,18 +1,14 @@
 include "globals.mzn";
+include "determine_hbound.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file
-int: HBOUND; %parameter to substract from maximum hbound
 
 set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
 array[ELEMENTS] of int: cheight;
 
-% compute worst case scenario boundaries for lower and upper bounds in maximum height search
-% worst we can do is stacking all the circuits vertically
-int: y_ub = sum (e in ELEMENTS) (cheight[e]) - HBOUND;
-% lower bound can naively be implemented by relaxing the board fixed width and stacking all circuits horizontally
-% thus the min height is equal to the tallest circuit in the board
+int: y_ub = determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
 
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
@@ -32,10 +28,22 @@ constraint forall (h in 0..HEIGHT) (sum (e in ELEMENTS where cheight[e] + y[e] >
 constraint forall (w in 0..WIDTH) (sum (e in ELEMENTS where cwidth[e] + x[e] > w /\ x[e] <= w) (cheight[e]) <= HEIGHT);
 
 % we can build an auxiliary array containing the area of each circuit we can then post an easy implicit contraint: board area >= sum(circuits area) in each solution
-% we use as area boundaries the worst case scenario of having a WIDTH*y_ub board
 var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
 constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
-solve minimize HEIGHT;
-output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) " ];
+% boolean channeling: each circuit bottom-left index is encoded as true in a matrix representing the whole board
+array[0..y_ub, 0..WIDTH] of var bool: b;
+constraint forall(e in ELEMENTS) (b[y[e], x[e]]);
+
+% horizontal flipping of the board
+constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..y_ub, j in reverse(0..WIDTH)]);
+% vertical flipping of the board
+constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..y_ub), j in 0..WIDTH]);
+% vertical and horizontal flipping of the board
+constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..y_ub), j in reverse(0..WIDTH)]);
+    
+solve:: int_search(x, first_fail, indomain_min)
+     :: int_search(y, first_fail, indomain_min) minimize HEIGHT;
+
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
