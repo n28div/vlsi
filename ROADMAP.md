@@ -16,5 +16,5 @@
 - [x] Smart boundary optimization: idk about this
 - [ ] Board symmetry breaking: implement boolean representation nqueens-like, break the 4 symmetries: main diagonal, secondary diagonal, vertical flip, horizontal flip (pt 4 in project paper)
 - [ ] Value symmetry breaking: when placing circuits of the board, it doesn't matter which one is choosed first if there's 2+ having the same size
-- [ ] Search optimization: place big circuits first and try fitting smallest one then
+- [x] Search optimization: place big circuits first and try fitting smallest one then
 - [ ] Minimization dual idea: minimize the difference *board_area - circuits_summed_area*
