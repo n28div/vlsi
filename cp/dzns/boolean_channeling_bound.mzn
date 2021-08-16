@@ -25,12 +25,15 @@ function int: determine_hbound(int: n, array[ELEMENTS] of int: widths, array[ELE
     determine_hbound(n, widths, heights, heightacc, widthacc, it+1, count)
   endif
 );
-                                      
-%int: HBOUND = determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
+
+                                   
+int: HBOUND = determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0); % uncomment for mzn bounding function 
+
+%int: HBOUND %uncomment for python
 % compute worst case scenario boundaries for lower and upper bounds in maximum height search
 % worst we can do is stacking all the circuits vertically
-%int: y_ub = sum (e in ELEMENTS) (cheight[e]) - HBOUND; % UNCOMMENT FOR PYTHON
-int: y_ub = sum (e in ELEMENTS) (cheight[e]); % UNCOMMENT FOR MINIZINC-IDE
+int: y_ub = sum (e in ELEMENTS) (cheight[e]) - HBOUND; % UNCOMMENT FOR PYTHON
+%int: y_ub = sum (e in ELEMENTS) (cheight[e]); % UNCOMMENT FOR MINIZINC-IDE
 % lower bound can naively be implemented by relaxing the board fixed width and stacking all circuits horizontally
 % thus the min height is equal to the tallest circuit in the board
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
