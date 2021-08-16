@@ -45,7 +45,7 @@ def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
     d["cheight"] = list(map(lambda d: int(d.split(" ")[1]), cdim))
 
     # smarter boundary on height
-    d["HBOUND"] = determine_hbound(d["N"], d["cwidth"], d["cheight"], 0, d["WIDTH"], 0, 0)
+    #d["HBOUND"] = determine_hbound(d["N"], d["cwidth"], d["cheight"], 0, d["WIDTH"], 0, 0)
 
   return d
 
