@@ -8,7 +8,7 @@ set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
 array[ELEMENTS] of int: cheight;
 
-int: y_ub = determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
+int: y_ub = sum (e in ELEMENTS) (cheight[e]) - determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
 
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
