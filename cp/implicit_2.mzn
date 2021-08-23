@@ -27,10 +27,10 @@ constraint forall (h in 0..HEIGHT) (sum (e in ELEMENTS where cheight[e] + y[e] >
 % implicit constraint: summing circuits height must be less or equal than height width for each board column
 constraint forall (w in 0..WIDTH) (sum (e in ELEMENTS where cwidth[e] + x[e] > w /\ x[e] <= w) (cheight[e]) <= HEIGHT);
 
-% we can build an auxiliary array containing the area of each circuit we can then post an easy implicit contraint: board area >= sum(circuits area) in each solution
+% we can build an auxiliary array containing the area of each circuit we can then post an easy implicit contraint: board area = sum(circuits area) in each solution
 var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
-constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
+constraint sum (e in ELEMENTS) (carea[e]) = board_area;
 
 solve minimize HEIGHT;
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) " ];
