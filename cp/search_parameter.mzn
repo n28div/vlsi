@@ -47,6 +47,7 @@ array[ELEMENTS] of var int: encodedpos_vsym;
 constraint lex_lesseq(encodedpos, [encodedpos_vsym[e] = encodepos(y[e] mod (HEIGHT - cheight[e]), x[e]) | e in ELEMENTS]);
 
 solve :: int_search(x, first_fail, indomain_min)
-      :: int_search(y, first_fail, indomain_min) minimize HEIGHT;
+      :: int_search(y, first_fail, indomain_max)
+      minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
