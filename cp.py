@@ -1,7 +1,7 @@
 from typing import Dict, Union, List
 from glob import glob
 from minizinc import Instance, Model, Solver, Result
-from utils.plot import plot_vlsi
+from utils.plot import plot_vlsi, plot_multi_vlsi
 from natsort import natsorted
 import sys, os
 import wandb
@@ -44,9 +44,6 @@ def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
     d["cwidth"] = list(map(lambda d: int(d.split(" ")[0]), cdim))
     d["cheight"] = list(map(lambda d: int(d.split(" ")[1]), cdim))
 
-    # smarter boundary on height
-    #d["HBOUND"] = determine_hbound(d["N"], d["cwidth"], d["cheight"], 0, d["WIDTH"], 0, 0)
-
   return d
 
 
@@ -86,7 +83,7 @@ def determine_hbound(n: int, cwidth: List[int], cheight: List[int],
     return (determine_hbound(n, cwidth, cheight, heightacc, widthacc, it+1, count))
 
 
-def report_result(data: Dict[str, Union[int, List[int]]], result: Result, **kwargs):
+def report_result(data: Dict[str, Union[int, List[int]]], result: Result, plot_intermediate=False, **kwargs):
   """Reports to the user the result from a minizinc run
 
   Args: 
@@ -99,9 +96,14 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, **kwar
   print("Took: %ss to find %d solutions" % (stat["solveTime"].total_seconds(), stat["nSolutions"]))
   print("Nodes: %d - failures %d" % (stat["nodes"], stat["failures"]))
 
-  solution_x = result[-1, "x"]
-  solution_y = result[-1, "y"]
-  plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, **kwargs)
+  if plot_intermediate:
+    solution_x = [result[i, "x"] for i in range(len(result))]
+    solution_y = [result[i, "y"] for i in range(len(result))]
+    plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, **kwargs)
+  else:
+    solution_x = result[-1, "x"]
+    solution_y = result[-1, "y"]
+    plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, **kwargs)
 
   return stat["solveTime"].total_seconds(), stat["nSolutions"], stat["nodes"], stat["failures"]
 
@@ -116,6 +118,12 @@ if __name__ == "__main__":
                         required=True, help="Model(s) to use. Leave empty to use all.")
     parser.add_argument("--instances", "-i", nargs="*", type=str,
                         required=True, help="Instances(s) to load. Leave empty to use all.")
+    parser.add_argument("--wandb", "-wandb", action="store_true", help="Log data using wandb.")
+    parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
+    parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
+    parser.add_argument("--solver", "-solver", "-s", nargs=1, type=str, default="chuffed", choices=["chuffed", "gecode"],
+                        help="Solver that Minizinc will use. Defaults to Chuffed.")
+                        
 
     # parse CLI arguments
     args = parser.parse_args()
@@ -124,16 +132,19 @@ if __name__ == "__main__":
     # load specified instances or load all instances if left empty
     instances = args.instances if len(args.instances) > 0 else enumerate_instances()
     # TODO: Solver config
-    gecode = Solver.lookup("chuffed")
+    gecode = Solver.lookup(args.solver)
+    
     # execute each model
     for m in models:
-      run = wandb.init(project='vlsi', entity='fatlads', tags=[m])
-      run.name = m
-      #custom x-axos
-      wandb.define_metric("instance number")
-      #set variables for which this metric holds
-      wandb.define_metric("*", step_metric='instance number')
-      config = wandb.config
+      if args.wandb:
+        run = wandb.init(project='vlsi', entity='fatlads', tags=[m])
+        run.name = m
+        #custom x-axis
+        wandb.define_metric("instance number")
+        #set variables for which this metric holds
+        wandb.define_metric("*", step_metric='instance number')
+        config = wandb.config
+      
       #counter for custom step
       instance_num = 1
       for i in instances:
@@ -149,22 +160,27 @@ if __name__ == "__main__":
         result = mzn_instance.solve(intermediate_solutions=True)
 
         #show report results
-        res = report_result(data, result, title="%s | %s" % (m, i), show=False)
+        res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
         solved_time = res[0]
         solutions = res[1]
         nodes = res[2]
         failures = res[3]
-        #log results
-        wandb.log({
-          "time taken": solved_time,
-          "solutions": solutions,
-          "nodes": nodes,
-          "failures": failures,
-          "instance number": instance_num
-        })
+        
+        if args.wandb:
+          #log results
+          wandb.log({
+            "time taken": solved_time,
+            "solutions": solutions,
+            "nodes": nodes,
+            "failures": failures,
+            "instance number": instance_num
+          })
+
         instance_num += 1
-      #finish run with this model, select next model
-      run.finish()
+      
+      if args.wandb:
+        #finish run with this model, select next model
+        run.finish()
       #reset counter for custom step
       instance_num = 1
 

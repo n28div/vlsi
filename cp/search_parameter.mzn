@@ -8,7 +8,7 @@ set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
 array[ELEMENTS] of int: cheight;
 
-int: y_ub = determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
+int: y_ub = sum (e in ELEMENTS) (cheight[e]) - determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
 
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
@@ -30,20 +30,24 @@ constraint forall (w in 0..WIDTH) (sum (e in ELEMENTS where cwidth[e] + x[e] > w
 % we can build an auxiliary array containing the area of each circuit we can then post an easy implicit contraint: board area >= sum(circuits area) in each solution
 var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
-constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
+constraint sum (e in ELEMENTS) (carea[e]) = board_area;
 
-% boolean channeling: each circuit bottom-left index is encoded as true in a matrix representing the whole board
-array[0..y_ub, 0..WIDTH] of var bool: b;
-constraint forall(e in ELEMENTS) (b[y[e], x[e]]);
+% encoded positions as flattened in a single array, 
+% x = enc / WIDTH, y = enc % WIDTH
+function var int: encodepos(var int: i, var int: j) = (i * WIDTH) + j;
+array[ELEMENTS] of var int: encodedpos = [encodepos(y[e], x[e]) | e in ELEMENTS];
 
-% horizontal flipping of the board
-constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..y_ub, j in reverse(0..WIDTH)]);
-% vertical flipping of the board
-constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..y_ub), j in 0..WIDTH]);
-% vertical and horizontal flipping of the board
-constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..y_ub), j in reverse(0..WIDTH)]);
-    
-solve:: int_search(x, first_fail, indomain_min)
-     :: int_search(y, first_fail, indomain_min) minimize HEIGHT;
+% we can observe than, for each bottom-left index we are taking care of, we can find the horizontal (vertical) symmetry
+% by computing x[e] % (WIDTH - cwidth[e]) (y[e] % (HEIGHT - cheight[e]))
+% horizontal symmetry breaking
+array[ELEMENTS] of var int: encodedpos_hsym;
+constraint lex_lesseq(encodedpos, [encodedpos_hsym[e] = encodepos(y[e], x[e] mod (WIDTH - cwidth[e])) | e in ELEMENTS]);
+% vertical symmetry breaking
+array[ELEMENTS] of var int: encodedpos_vsym;
+constraint lex_lesseq(encodedpos, [encodedpos_vsym[e] = encodepos(y[e] mod (HEIGHT - cheight[e]), x[e]) | e in ELEMENTS]);
+
+solve :: int_search(x, first_fail, indomain_min)
+      :: int_search(y, first_fail, indomain_max)
+      minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
