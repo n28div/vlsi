@@ -10,9 +10,12 @@ array[ELEMENTS] of int: cheight;
 
 int: y_ub = sum (e in ELEMENTS) (cheight[e]) - determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
+int: y_tot = sum(e in ELEMENTS) (cheight[e]);
+int: y_max = y_tot - y_ub;
+
 
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
-array[ELEMENTS] of var 0..y_ub: y; % circuit y position, 0-indexed, goes from index 0 to upper bound
+array[ELEMENTS] of var 0..(y_max): y; % circuit y position, 0-indexed, goes from index 0 to upper bound
 
 % maximum width is fixed by the parameter W
 constraint max (e in ELEMENTS) (x[e] + cwidth[e]) <= WIDTH;
@@ -20,7 +23,7 @@ constraint max (e in ELEMENTS) (x[e] + cwidth[e]) <= WIDTH;
 constraint diffn(x, y, cwidth, cheight);
 
 % height of circuit is the highest placed circuit top-left corner
-var y_lb..y_ub: HEIGHT = max (e in ELEMENTS) (y[e] + cheight[e]);
+var y_lb..y_max: HEIGHT = max (e in ELEMENTS) (y[e] + cheight[e]);
 
 % implicit constraint: summing circuits width must be less or equal than board width for each board row
 constraint forall (h in 0..HEIGHT) (sum (e in ELEMENTS where cheight[e] + y[e] > h /\ y[e] <= h) (cwidth[e]) <= WIDTH);

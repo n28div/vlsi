@@ -1,7 +1,7 @@
 % determines the height bound af the board by placing circuits in greedy way
 function int: determine_hbound(int: n,
-                               array[ELEMENTS] of int: widths, 
-                               array[ELEMENTS] of int: heights, 
+                               array[int] of int: widths, 
+                               array[int] of int: heights, 
                                int: heightacc, 
                                int: widthacc,
                                int: it, 
