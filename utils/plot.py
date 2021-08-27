@@ -32,7 +32,7 @@ def plot_multi_vlsi(cwidth: List[int], cheight: List[int], cx: List[List[int]], 
       colors = plt.cm.get_cmap("tab20", len(cwidth))
       for i, (w, h, x, y) in enumerate(zip(cwidth, cheight, cx[solution], cy[solution])):
         # draw rectangle
-        ax.add_patch(Rectangle((x, y), w, h, fill=True, facecolor=colors(i)))
+        ax.add_patch(Rectangle((x, y), w, h, fill=True, facecolor=colors(i), linewidth=1.5, edgecolor="white"))
 
       solution += 1
       if solution >= len(cx):
@@ -69,7 +69,7 @@ def plot_vlsi(cwidth: List[int], cheight: List[int], cx: List[int], cy: List[int
     colors = plt.cm.get_cmap("tab20", len(cwidth))
     for i, (w, h, x, y) in enumerate(zip(cwidth, cheight, cx, cy)):
       # draw rectangle
-      ax.add_patch(Rectangle((x, y), w, h, fill=True, facecolor=colors(i)))
+      ax.add_patch(Rectangle((x, y), w, h, fill=True, facecolor=colors(i), linewidth=1.5, edgecolor="white"))
 
     if show: plt.show()
     if save is not False: plt.savefig(save)
