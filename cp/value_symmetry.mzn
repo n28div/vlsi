@@ -38,7 +38,6 @@ constraint lex_lesseq(x, [(WIDTH - cwidth[e]) - x[e] | e in ELEMENTS]);
 constraint lex_lesseq(y, [(HEIGHT - cheight[e]) - y[e] | e in ELEMENTS]);
 
 % flatten the position of each circuit in a single int
-% adapted from http://vlsicad.eecs.umich.edu/BK/Slots/cache/vlsicad.eecs.umich.edu/BK/BloBB/PAPERS/symcon-06.pdf
 function var int: flattenpos(var int: i, var int: j) = (i * WIDTH) + j;
 array[ELEMENTS] of var int: flatpos;
 constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
@@ -59,9 +58,6 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
-
-solve :: int_search(x, first_fail, indomain_min)
-      :: int_search(y, first_fail, indomain_min)
-      minimize HEIGHT;
+solve minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
