@@ -33,7 +33,7 @@ constraint forall (w in 0..WIDTH) (sum (e in ELEMENTS where cwidth[e] + x[e] > w
 % we can build an auxiliary array containing the area of each circuit we can then post an easy implicit contraint: board area >= sum(circuits area) in each solution
 var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
-constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
+constraint sum (e in ELEMENTS) (carea[e]) = board_area;
 
 % encoded positions as flattened in a single array, 
 % x = enc / WIDTH, y = enc % WIDTH
