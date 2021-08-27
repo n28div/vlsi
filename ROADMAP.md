@@ -16,8 +16,8 @@
 * [x] Convert constraints as much as possible to global contraints (pt 3 in project paper) (**cant really come up with a better formulation of constraints not using globals, globalizer doesnt give any hint too**)
 * [x] Smart boundary optimization: idk about this
 * [x] Board symmetry breaking: implement boolean representation nqueens-like, break the 4 symmetries: vertical flip, horizontal flip (pt 4 in project paper)
-* [ ] Value symmetry breaking: when placing circuits of the board, it doesn't matter which one is choosed first if there's 2+ having the same size
-* [ ] Minimization dual idea: minimize the difference *board_area - circuits_summed_area*
+* [x] Value symmetry breaking: when placing circuits of the board, it doesn't matter which one is choosed first if there's 2+ having the same size
+* [x] Simple constraint guiding: place highest element on (0, 0)
 * [x] Search optimization: place big circuits first and try fitting smallest one then
 
 #### model files and features
