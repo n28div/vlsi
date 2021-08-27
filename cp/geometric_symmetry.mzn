@@ -32,15 +32,10 @@ var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
 constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
-% boolean channeling: each circuit bottom-left index is encoded as true in a matrix representing the whole board
-array[0..y_ub, 0..WIDTH] of var bool: b;
-%constraint forall (i in 0..y_ub, j in 0..WIDTH) (b[i, j] <-> exists (e in ELEMENTS) (x[e] = j /\ y[e] = i));
-constraint forall(e in ELEMENTS) (b[y[e], x[e]]);
-
-% horizontal flipping of the circuit
-constraint lex_lesseq(array1d(b), [b[i, j] | i in 0..y_ub, j in reverse(0..WIDTH)]);
-% vertical flipping of the circuit
-constraint lex_lesseq(array1d(b), [b[i, j] | i in reverse(0..y_ub), j in 0..WIDTH]);
+% horizontal symmetry breaking
+constraint lex_lesseq(x, [(WIDTH - cwidth[e]) - x[e] | e in ELEMENTS]);
+% vertical symmetry breaking
+constraint lex_lesseq(y, [(HEIGHT - cheight[e]) - y[e] | e in ELEMENTS]);
 
 solve minimize HEIGHT;
 

@@ -35,19 +35,10 @@ var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
 constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
-% encoded positions as flattened in a single array, 
-% x = enc / WIDTH, y = enc % WIDTH
-function var int: encodepos(var int: i, var int: j) = (i * WIDTH) + j;
-array[ELEMENTS] of var int: encodedpos = [encodepos(y[e], x[e]) | e in ELEMENTS];
-
-% we can observe than, for each bottom-left index we are taking care of, we can find the horizontal (vertical) symmetry
-% by computing x[e] % (WIDTH - cwidth[e]) (y[e] % (HEIGHT - cheight[e]))
 % horizontal symmetry breaking
-array[ELEMENTS] of var int: encodedpos_hsym;
-constraint lex_lesseq(encodedpos, [encodedpos_hsym[e] = encodepos(y[e], x[e] mod (WIDTH - cwidth[e])) | e in ELEMENTS]);
+constraint lex_lesseq(x, [(WIDTH - cwidth[e]) - x[e] | e in ELEMENTS]);
 % vertical symmetry breaking
-array[ELEMENTS] of var int: encodedpos_vsym;
-constraint lex_lesseq(encodedpos, [encodedpos_vsym[e] = encodepos(y[e] mod (HEIGHT - cheight[e]), x[e]) | e in ELEMENTS]);
+constraint lex_lesseq(y, [(HEIGHT - cheight[e]) - y[e] | e in ELEMENTS]);
 
 solve :: int_search(x, first_fail, indomain_min)
       :: int_search(y, first_fail, indomain_max)
