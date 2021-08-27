@@ -8,7 +8,7 @@ set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
 array[ELEMENTS] of int: cheight;
 
-int: y_ub = sum (e in ELEMENTS) (cheight[e]) - determine_hbound(N, cwidth, cheight, 0, WIDTH, 1, 0);
+int: y_ub = greedy_height(N, WIDTH, reverse(sort_by(cwidth, cheight)), reverse(sort(cheight)), 0, 0, 0, 1);
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
 
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
@@ -59,9 +59,8 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
-
-solve :: int_search(x, first_fail, indomain_min)
-      :: int_search(y, first_fail, indomain_min)
+solve :: int_search(y, first_fail, indomain_min)
+      :: int_search(x, first_fail, indomain_min)
       minimize HEIGHT;
 
-output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n\(y_lb) \(y_ub)" ];
