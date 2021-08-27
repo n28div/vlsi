@@ -19,9 +19,6 @@ constraint max (e in ELEMENTS) (x[e] + cwidth[e]) <= WIDTH;
 % no overlapping of boxes
 constraint diffn(x, y, cwidth, cheight);
 
-% redundant constraint time-scheduling
-%constraint cumulative(y, cheight, cwidth, WIDTH);
-
 % height of circuit is the highest placed circuit top-left corner
 var y_lb..y_ub: HEIGHT = max (e in ELEMENTS) (y[e] + cheight[e]);
 

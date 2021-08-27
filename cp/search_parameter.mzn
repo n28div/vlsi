@@ -64,7 +64,7 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /
 constraint x[arg_max(cheight)] = 0 /\ y[arg_max(cheight)] = 0;
 
 solve :: seq_search([int_search(reverse(sort_by(y, cheight)), input_order, indomain_min),
-                     int_search(reverse(sort_by(x, cwidth)), input_order, indomain_min)])
+                     int_search(reverse(sort_by(x, cheight)), input_order, indomain_min)])
   minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];
