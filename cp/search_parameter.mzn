@@ -1,5 +1,6 @@
 include "globals.mzn";
 include "determine_hbound.mzn";
+include "on_bottom.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file
@@ -59,8 +60,11 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
-solve :: int_search(y, first_fail, indomain_min)
-      :: int_search(x, first_fail, indomain_min)
-      minimize HEIGHT;
+% find the index up to which elements fit on the bottom of the circuit
+constraint x[arg_max(cheight)] = 0 /\ y[arg_max(cheight)] = 0;
 
-output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n\(y_lb) \(y_ub)" ];
+solve :: seq_search([int_search(reverse(sort_by(y, cheight)), input_order, indomain_min),
+                     int_search(reverse(sort_by(x, cwidth)), input_order, indomain_min)])
+  minimize HEIGHT;
+
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];

@@ -132,6 +132,7 @@ if __name__ == "__main__":
     parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
     parser.add_argument("--solver", "-solver", "-s", nargs=1, type=str, default="chuffed", choices=["chuffed", "gecode"],
                         help="Solver that Minizinc will use. Defaults to Chuffed.")
+    parser.add_argument("--free-search", "-f", action="store_true", help="Perform free search (more efficient on search_parameters). Defaults to false.")
     parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
                         help="Execution time contraint in seconds. Defaults to 300s (5m).")
                         
@@ -167,7 +168,9 @@ if __name__ == "__main__":
           mzn_instance[k] = v
 
         # run model
-        result = mzn_instance.solve(intermediate_solutions=True, timeout=timedelta(seconds=args.timeout))
+        result = mzn_instance.solve(intermediate_solutions=True, 
+                                    timeout=timedelta(seconds=args.timeout),
+                                    free_search=args.free_search)
 
         #show report results
         res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
