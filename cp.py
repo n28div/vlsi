@@ -5,6 +5,7 @@ from utils.plot import plot_vlsi, plot_multi_vlsi
 from natsort import natsorted
 import sys, os
 import wandb
+from datetime import timedelta
 
 def enumerate_models() -> List[str]:
   """
@@ -92,9 +93,17 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, plot_i
     **kwargs: Additional arguments passed to plot_vlsi function
   """
   stat = result.statistics
+
+  time = stat["time"].total_seconds() if "time" in stat else None
+  nodes = stat["nodes"] if "nodes" in stat else None
+  failures = stat["failures"] if "failures" in stat else None
+  nSolutions = stat["nSolutions"] if "nSolutions" in stat else None
+
   print("Instance solved")
-  print("Took: %ss to find %d solutions" % (stat["solveTime"].total_seconds(), stat["nSolutions"]))
-  print("Nodes: %d - failures %d" % (stat["nodes"], stat["failures"]))
+  if time is not None and nSolutions is not None:
+    print("Took: %ss to find %d solutions" % (time, nSolutions))
+  if nodes is not None and failures is not None:
+    print("Nodes: %d - failures %d" % (nodes, failures))
 
   if plot_intermediate:
     solution_x = [result[i, "x"] for i in range(len(result))]
@@ -105,7 +114,7 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, plot_i
     solution_y = result[-1, "y"]
     plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, **kwargs)
 
-  return stat["solveTime"].total_seconds(), stat["nSolutions"], stat["nodes"], stat["failures"]
+  return time, nSolutions, nodes, failures
 
 
 if __name__ == "__main__":
@@ -123,8 +132,9 @@ if __name__ == "__main__":
     parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
     parser.add_argument("--solver", "-solver", "-s", nargs=1, type=str, default="chuffed", choices=["chuffed", "gecode"],
                         help="Solver that Minizinc will use. Defaults to Chuffed.")
+    parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
+                        help="Execution time contraint in seconds. Defaults to 300s (5m).")
                         
-
     # parse CLI arguments
     args = parser.parse_args()
     # use specified models or use all models if left empty
@@ -132,8 +142,8 @@ if __name__ == "__main__":
     # load specified instances or load all instances if left empty
     instances = args.instances if len(args.instances) > 0 else enumerate_instances()
     # TODO: Solver config
-    gecode = Solver.lookup(args.solver)
-    
+    solver = Solver.lookup(args.solver)
+
     # execute each model
     for m in models:
       if args.wandb:
@@ -151,13 +161,13 @@ if __name__ == "__main__":
         data = txt2dict(i)
         #create model new everytime so we can change parameter value
         mzn_model = Model(m)
-        mzn_instance = Instance(gecode, mzn_model)
+        mzn_instance = Instance(solver, mzn_model)
         # set data variables on instance
         for k, v in data.items():
           mzn_instance[k] = v
 
         # run model
-        result = mzn_instance.solve(intermediate_solutions=True)
+        result = mzn_instance.solve(intermediate_solutions=True, timeout=timedelta(seconds=args.timeout))
 
         #show report results
         res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
