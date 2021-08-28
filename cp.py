@@ -1,11 +1,12 @@
 from typing import Dict, Union, List
 from glob import glob
-from minizinc import Instance, Model, Solver, Result
+from minizinc import Instance, Model, Solver, Result, model
 from utils.plot import plot_vlsi, plot_multi_vlsi
 from natsort import natsorted
 import sys, os
 import wandb
 from datetime import timedelta
+import csv
 
 def enumerate_models() -> List[str]:
   """
@@ -16,6 +17,7 @@ def enumerate_models() -> List[str]:
 
   return natsorted(glob("cp/*.mzn"))
 
+
 def enumerate_instances() -> List[str]:
   """
   Enumerate input instances
@@ -23,6 +25,7 @@ def enumerate_instances() -> List[str]:
   Returns: List[str]: List of available instances, sorted by number
   """
   return natsorted(glob("instances/*.txt"))
+
 
 def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
   """Converts txt input file to dict.
@@ -48,43 +51,7 @@ def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
   return d
 
 
-def determine_hbound(n: int, cwidth: List[int], cheight: List[int],
-                     heightacc: int, widthacc: int, it: int, count: int) -> int:
-  """Determines a somewhat smart boundary on the height parameter, tries to fit the
-  lower row of the board with as much height as possible
-
-  Args:
-    n: amount of pieces to be tried
-    cwidth: list of widths of pieces to be tried
-    cheight: list of heights of pieces to be tried
-    heightacc: accumulator for height of pieces that are placed
-    widthacc: accumulator for remaining width to place pieces
-    it: iterator
-    count: amount of pieces placed at bottom row
-  """
-  #check if current it fits
-  if(it==n):
-    return heightacc
-
-  if(widthacc <= 0):
-    return heightacc
-  #if yes, max (fit, no fit)
-  #if no, (no fit)
-  if(widthacc-cwidth[it]>=0):
-                #fit
-    if(count>0):
-      #for every piece added after the first piece, calculate leftover height
-      h_added = cheight[it]
-    else:
-      h_added = 0
-    return max(determine_hbound(n, cwidth, cheight, heightacc+h_added, widthacc-cwidth[it], it+1, count+1),
-                #don't fit
-               determine_hbound(n, cwidth, cheight, heightacc, widthacc, it+1, count))
-  else:
-    return (determine_hbound(n, cwidth, cheight, heightacc, widthacc, it+1, count))
-
-
-def report_result(data: Dict[str, Union[int, List[int]]], result: Result, plot_intermediate=False, **kwargs):
+def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=False, plot_intermediate=False, **kwargs):
   """Reports to the user the result from a minizinc run
 
   Args: 
@@ -94,25 +61,34 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, plot_i
   """
   stat = result.statistics
 
-  time = stat["time"].total_seconds() if "time" in stat else None
-  nodes = stat["nodes"] if "nodes" in stat else None
-  failures = stat["failures"] if "failures" in stat else None
-  nSolutions = stat["nSolutions"] if "nSolutions" in stat else None
-
-  print("Instance solved")
-  if time is not None and nSolutions is not None:
-    print("Took: %ss to find %d solutions" % (time, nSolutions))
-  if nodes is not None and failures is not None:
-    print("Nodes: %d - failures %d" % (nodes, failures))
-
-  if plot_intermediate:
-    solution_x = [result[i, "x"] for i in range(len(result))]
-    solution_y = [result[i, "y"] for i in range(len(result))]
-    plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, **kwargs)
+  time = stat["flatTime"].total_seconds()
+  nSolutions = stat["nSolutions"]
+  # nodes and failures are not available if execution is stopped by timeout
+  if "nodes" in stat and "failures" in stat:
+    print("Instance solved")
+    nodes = stat["nodes"]
+    failures = stat["failures"]
   else:
-    solution_x = result[-1, "x"]
-    solution_y = result[-1, "y"]
-    plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, **kwargs)
+    print("Instance not fully solved")
+    nodes = -1
+    failures = -1
+
+  max_y =  max(result[-1, "y"])
+  max_y_idx = result[-1, "y"].index(max_y)
+  height = max_y + data["cheight"][max_y_idx]
+  print("Height: %d" % height)
+  print("Took: %ss to find %d solutions" % (time, nSolutions))
+  print("Nodes: %s - failures: %s" % (nodes, failures))
+
+  if show:
+    if plot_intermediate:
+      solution_x = [result[i, "x"] for i in range(len(result))]
+      solution_y = [result[i, "y"] for i in range(len(result))]
+      plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, show=show, **kwargs)
+    else:
+      solution_x = result[-1, "x"]
+      solution_y = result[-1, "y"]
+      plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, show=show, **kwargs)
 
   return time, nSolutions, nodes, failures
 
@@ -128,6 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--instances", "-i", nargs="*", type=str,
                         required=True, help="Instances(s) to load. Leave empty to use all.")
     parser.add_argument("--wandb", "-wandb", action="store_true", help="Log data using wandb.")
+    parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
     parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
     parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
     parser.add_argument("--solver", "-solver", "-s", nargs=1, type=str, default="chuffed", choices=["chuffed", "gecode"],
@@ -147,6 +124,14 @@ if __name__ == "__main__":
 
     # execute each model
     for m in models:
+      if args.csv is not None:
+        if not os.path.exists(args.csv[0]):
+          os.mkdir(args.csv[0])
+
+        f = open(os.path.join(args.csv[0], os.path.basename(m) + ".csv"), "w")
+        csv_writer = csv.writer(f)
+        csv_writer.writerow(["instance nr", "time", "solutions", "nodes", "failures"])
+
       if args.wandb:
         run = wandb.init(project='vlsi', entity='fatlads', tags=[m])
         run.name = m
@@ -159,6 +144,8 @@ if __name__ == "__main__":
       #counter for custom step
       instance_num = 1
       for i in instances:
+        print("%s %s %s %s %s" % ("-" * 5, m, "-" * 3, i, "-" * 5))
+
         data = txt2dict(i)
         #create model new everytime so we can change parameter value
         mzn_model = Model(m)
@@ -189,11 +176,16 @@ if __name__ == "__main__":
             "instance number": instance_num
           })
 
+        if args.csv is not None:
+          csv_writer.writerow([instance_num, solved_time, solutions, nodes, failures])
+
         instance_num += 1
       
       if args.wandb:
         #finish run with this model, select next model
         run.finish()
+      if args.csv is not None:
+        f.close()
       #reset counter for custom step
       instance_num = 1
 
