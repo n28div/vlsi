@@ -35,7 +35,7 @@ constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 % horizontal symmetry breaking
 constraint lex_lesseq(x, [(WIDTH - cwidth[e]) - x[e] | e in ELEMENTS]);
 % vertical symmetry breaking
-constraint lex_lesseq(y, [(HEIGHT - cheight[e]) - y[e] | e in ELEMENTS]);
+constraint lex_greatereq(y, [(HEIGHT - cheight[e]) - y[e] | e in ELEMENTS]);
 
 solve minimize HEIGHT;
 
