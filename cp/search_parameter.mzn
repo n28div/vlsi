@@ -1,6 +1,5 @@
 include "globals.mzn";
 include "determine_hbound.mzn";
-include "on_bottom.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file

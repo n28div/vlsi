@@ -1,6 +1,5 @@
 include "globals.mzn";
 include "determine_hbound.mzn";
-include "on_bottom.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file
@@ -60,11 +59,9 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
-% fit biggest elements (based on area) on the bottom of the circuit
-array[int] of ELEMENTS: elem_on_bottom = 
-  elem_on_bottom(WIDTH, reverse(sort_by(cwidth, carea)), reverse(sort_by(ELEMENTS, carea)), 1, []);
-constraint forall (e in elem_on_bottom) (y[e] = 0);
+% tallest element in (0, 0)
+constraint x[arg_max(cheight)] = 0 /\ y[arg_max(cheight)] = 0;
 
 solve minimize HEIGHT;
 
-output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];
