@@ -50,7 +50,9 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[
 
 % vertical value symmetry: if two adjacent blocks of the same height are at the same x then they can be swapped
 predicate ver_adjacent(var ELEMENTS: e1, var ELEMENTS: e2) = 
+                                     %I think this should be y[e2]?
   if y[e1] < y[e2] then y[e1] + cheight[e1] = x[e2] else y[e2] + cheight[e2] = y[e1] endif;
+                                                                                                     %this should be ver_adjacent right?
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[e1] = cheight[e2] /\ hor_adjacent(e1, e2))
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
