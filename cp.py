@@ -73,8 +73,8 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=F
     nodes = -1
     failures = -1
 
-  max_y =  max(result[-1, "y"])
-  max_y_idx = result[-1, "y"].index(max_y)
+  max_y =  max(result.solution[-1].y)
+  max_y_idx = result.solution[-1].y.index(max_y)
   height = max_y + data["cheight"][max_y_idx]
   print("Height: %d" % height)
   print("Took: %ss to find %d solutions" % (time, nSolutions))
@@ -82,13 +82,22 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=F
 
   if show:
     if plot_intermediate:
-      solution_x = [result[i, "x"] for i in range(len(result))]
-      solution_y = [result[i, "y"] for i in range(len(result))]
+      solution_x = [r.x for r in result.solution]
+      solution_y = [r.y for r in result.solution]
       plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, show=show, **kwargs)
-    else:
-      solution_x = result[-1, "x"]
-      solution_y = result[-1, "y"]
-      plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, show=show, **kwargs)
+    else:    
+      solution_x = result.solution[-1].x
+      solution_y = result.solution[-1].y
+
+      if hasattr(result.solution[-1], "rotated"):
+        rotation = result.solution[-1].rotated
+        cwidth = [ch if r else cw for r, cw, ch in zip(rotation, data["cwidth"], data["cheight"])]        
+        cheight = [cw if r else ch for r, cw, ch in zip(rotation, data["cwidth"], data["cheight"])]        
+      else:
+          cwidth = data["cwidth"]
+          cheight = data["cheight"]
+      
+      plot_vlsi(cwidth, cheight, solution_x, solution_y, show=show, **kwargs)
 
   return time, nSolutions, nodes, failures
 
