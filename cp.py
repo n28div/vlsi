@@ -61,8 +61,8 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=F
   """
   stat = result.statistics
 
-  time = stat["flatTime"].total_seconds()
-  nSolutions = stat["nSolutions"]
+  time = stat["time"].total_seconds()
+  nSolutions = stat["nSolutions"] if "nSolutions" in stat else 0
   # nodes and failures are not available if execution is stopped by timeout
   if "nodes" in stat and "failures" in stat:
     print("Instance solved")
