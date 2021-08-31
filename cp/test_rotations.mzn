@@ -1,0 +1,88 @@
+include "globals.mzn";
+include "determine_hbound.mzn";
+
+int: WIDTH; % width of the circuit
+int: N; % number of elements in the input file
+
+set of int: ELEMENTS = 1..N;
+array[ELEMENTS] of int: cwidth;
+array[ELEMENTS] of int: cheight;
+
+int: y_ub = greedy_height(N, WIDTH, reverse(sort_by(cwidth, cheight)), reverse(sort(cheight)), 0, 0, 0, 1);
+int: y_lb = max (e in ELEMENTS) (cheight[e]);
+
+array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
+array[ELEMENTS] of var 0..y_ub: y; % circuit y position, 0-indexed, goes from index 0 to upper bound
+array[ELEMENTS] of var bool: rotated; %is the circuit rotated
+
+
+% maximum width is fixed by the parameter W
+constraint forall (e in ELEMENTS) (x[e] + (if(rotated[e]) then cheight[e] else cwidth[e] endif ) <= WIDTH);
+% no overlapping of boxes
+constraint diffn(x, y, [if(rotated[e]) then cheight[e] else cwidth[e] endif | e in ELEMENTS], 
+                [if(rotated[e]) then cwidth[e] else cheight[e] endif | e in ELEMENTS]);
+
+% height of circuit is the highest placed circuit top-left corner
+var y_lb..y_ub: HEIGHT = max (e in ELEMENTS) (y[e] + if(rotated[e]) then cwidth[e] else cheight[e] endif);
+
+% implicit constraint: summing circuits width must be less or equal than board width for each board row
+constraint forall (h in 0..HEIGHT) (sum (e in ELEMENTS where 
+           if(rotated[e]) then cwidth[e] else cheight[e] endif + y[e] > h /\ 
+           y[e] <= h) (if(rotated[e]) then cheight[e] else cwidth[e] endif) <= WIDTH);
+% implicit constraint: summing circuits height must be less or equal than height width for each board column
+constraint forall (w in 0..WIDTH) (sum (e in ELEMENTS where 
+           if(rotated[e]) then cheight[e] else cwidth[e] endif + x[e] > w /\ 
+           x[e] <= w) (if(rotated[e]) then cwidth[e] else cheight[e] endif) <= HEIGHT);
+
+% we can build an auxiliary array containing the area of each circuit we can then post an easy implicit contraint: board area >= sum(circuits area) in each solution
+var int: board_area = WIDTH * HEIGHT;
+%maybe do rotation here as well, but in area it should not matter
+array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
+constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
+
+% horizontal symmetry breaking
+constraint lex_lesseq(x, [(WIDTH - if(rotated[e]) then cheight[e] else cwidth[e] endif) - x[e] | e in ELEMENTS]);
+% vertical symmetry breaking
+constraint lex_greatereq(y, [(HEIGHT - if(rotated[e]) then cwidth[e] else cheight[e] endif) - y[e] | e in ELEMENTS]);
+
+% flatten the position of each circuit in a single int
+% adapted from http://vlsicad.eecs.umich.edu/BK/Slots/cache/vlsicad.eecs.umich.edu/BK/BloBB/PAPERS/symcon-06.pdf
+function var int: flattenpos(var int: i, var int: j) = (i * WIDTH) + j;
+array[ELEMENTS] of var int: flatpos;
+constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
+
+% horizontal value symmetry: if two adjacent blocks of the same width are at the same y then they can be swapped
+predicate hor_adjacent(var ELEMENTS: e1, var ELEMENTS: e2) = 
+  if x[e1] < x[e2] then x[e1] + if(rotated[e1]) then cheight[e1] else cwidth[e1] endif = x[e2] else 
+  x[e2] + if(rotated[e2]) then cheight[e2] else cwidth[e2] endif = x[e1] endif;
+  
+constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ 
+      if(rotated[e1]) then cwidth[e1] else cheight[e1] endif = if(rotated[e2]) then cwidth[e2] else cheight[e2] endif /\ 
+      hor_adjacent(e1, e2))
+      (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
+
+% vertical value symmetry: if two adjacent blocks of the same height are at the same x then they can be swapped
+predicate ver_adjacent(var ELEMENTS: e1, var ELEMENTS: e2) = 
+      if y[e1] < y[e2] then y[e1] + if(rotated[e1]) then cwidth[e1] else cheight[e1] endif = y[e2] else 
+      y[e2] + if(rotated[e2]) then cwidth[e2] else cheight[e2] endif = y[e1] endif;
+      
+constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ 
+    if(rotated[e1]) then cwidth[e1] else cheight[e1] endif = if(rotated[e2]) then cwidth[e2] else cheight[e2] endif /\ 
+    ver_adjacent(e1, e2))
+    (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
+
+% total value symmetry: if two blocks are not adjacent but they have the same width and the same height then they can be swapped
+constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ 
+   if(rotated[e1]) then cheight[e1] else cwidth[e1] endif = if(rotated[e2]) then cheight[e2] else cwidth[e2] endif /\ 
+   if(rotated[e1]) then cwidth[e1] else cheight[e1] endif = if(rotated[e2]) then cwidth[e2] else cheight[e2] endif)
+  (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
+
+% tallest element in (0, 0)
+constraint x[arg_max(cheight)] = 0 /\ y[arg_max(cheight)] = 0;
+
+solve :: seq_search([int_search(reverse(sort_by(y, cheight)), input_order, indomain_min),
+                     int_search(reverse(sort_by(x, cheight)), input_order, indomain_min),
+                     bool_search(rotated, input_order, indomain_min)])
+  minimize HEIGHT;
+
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];
