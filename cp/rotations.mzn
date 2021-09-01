@@ -18,9 +18,11 @@ array[ELEMENTS] of var 0..y_ub: y; % circuit y position, 0-indexed, goes from in
 array[ELEMENTS] of bool: rotatable = [if cwidth[e] == cheight[e] then false else true endif | e in ELEMENTS];
 
 array[ELEMENTS] of var bool: rotated;
-array[ELEMENTS] of var int: rwidth = [if (rotated[e] /\ rotatable[e]) then cheight[e] else cwidth[e] endif | e in ELEMENTS];
-array[ELEMENTS] of var int: rheight = [if (rotated[e] /\ rotatable[e]) then cwidth[e] else cheight[e] endif | e in ELEMENTS];
+array[ELEMENTS] of var int: rwidth;
+array[ELEMENTS] of var int: rheight;
 
+constraint forall (e in ELEMENTS) (rwidth[e] = if (rotated[e] /\ rotatable[e]) then cheight[e] else cwidth[e] endif);
+constraint forall (e in ELEMENTS) (rheight[e] = if (rotated[e] /\ rotatable[e]) then cwidth[e] else cheight[e] endif);
 % maximum width is fixed by the parameter W
 constraint max (e in ELEMENTS) (x[e] + rwidth[e]) <= WIDTH;
 % no overlapping of boxes
@@ -74,4 +76,4 @@ solve :: seq_search([int_search(rotated, first_fail, indomain_min),
                      int_search(reverse(sort_by(x, cheight)), input_order, indomain_min)])
   minimize HEIGHT;
 
-output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \nrotations: = \(rotated)" ];
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \nrotations: = \(rotated) \nrotatable: = \(rotatable)" ];
