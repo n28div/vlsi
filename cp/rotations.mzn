@@ -69,7 +69,7 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ rwidth[e1] = rwidth[e2] /
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
 % tallest element in (0, 0)
-constraint x[arg_max(rheight)] = 0 /\ y[arg_max(rheight)] = 0;
+%constraint x[arg_max(rheight)] = 0 /\ y[arg_max(rheight)] = 0;
 
 solve :: seq_search([int_search(rotated, first_fail, indomain_min),
                      int_search(reverse(sort_by(y, cheight)), input_order, indomain_min),
