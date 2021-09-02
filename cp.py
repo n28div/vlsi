@@ -94,9 +94,9 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=F
         cwidth = [ch if r else cw for r, cw, ch in zip(rotation, data["cwidth"], data["cheight"])]        
         cheight = [cw if r else ch for r, cw, ch in zip(rotation, data["cwidth"], data["cheight"])]        
       else:
-          cwidth = data["cwidth"]
-          cheight = data["cheight"]
-      
+        cwidth = data["cwidth"]
+        cheight = data["cheight"]
+    
       plot_vlsi(cwidth, cheight, solution_x, solution_y, show=show, **kwargs)
 
   return time, nSolutions, nodes, failures
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
     parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
     parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
-    parser.add_argument("--solver", "-solver", "-s", nargs=1, type=str, default="chuffed", choices=["chuffed", "gecode"],
+    parser.add_argument("--solver", "-solver", "-s", nargs=1, type=str, default=["chuffed"], choices=["chuffed", "gecode"],
                         help="Solver that Minizinc will use. Defaults to Chuffed.")
     parser.add_argument("--free-search", "-f", action="store_true", help="Perform free search (more efficient on search_parameters). Defaults to false.")
     parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     # load specified instances or load all instances if left empty
     instances = args.instances if len(args.instances) > 0 else enumerate_instances()
     # TODO: Solver config
-    solver = Solver.lookup(args.solver)
+    solver = Solver.lookup(args.solver[0])
 
     # execute each model
     for m in models:
