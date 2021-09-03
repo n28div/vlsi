@@ -81,23 +81,28 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=F
   print("Nodes: %s - failures: %s" % (nodes, failures))
 
   if show:
+    has_rotations = hasattr(result.solution[-1], "rotated")
+
     if plot_intermediate:
       solution_x = [r.x for r in result.solution]
       solution_y = [r.y for r in result.solution]
-      plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, show=show, **kwargs)
+
+      if has_rotations:
+        rotated = [r.rotated for r in result.solution]
+      else:
+        rotated = [[False for _ in range(len(data["cwidth"]))] for _ in result.solution]
+
+      plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
     else:    
       solution_x = result.solution[-1].x
       solution_y = result.solution[-1].y
 
-      if hasattr(result.solution[-1], "rotated"):
-        rotation = result.solution[-1].rotated
-        cwidth = [ch if r else cw for r, cw, ch in zip(rotation, data["cwidth"], data["cheight"])]        
-        cheight = [cw if r else ch for r, cw, ch in zip(rotation, data["cwidth"], data["cheight"])]        
+      if has_rotations:
+        rotated = result.solution[-1].rotated
       else:
-        cwidth = data["cwidth"]
-        cheight = data["cheight"]
+        rotated = [False for _ in range(len(data["cwidth"]))]
     
-      plot_vlsi(cwidth, cheight, solution_x, solution_y, show=show, **kwargs)
+      plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
 
   return time, nSolutions, nodes, failures
 
