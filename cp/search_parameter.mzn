@@ -36,16 +36,23 @@ constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 constraint forall(e in ELEMENTS) (x[e] <= WIDTH - cwidth[e]);
 constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
 
-% horizontal symmetry breaking
-constraint lex_lesseq(x, [(WIDTH - cwidth[e]) - x[e] | e in ELEMENTS]);
-% vertical symmetry breaking
-constraint lex_greatereq(y, [(HEIGHT - cheight[e]) - y[e] | e in ELEMENTS]);
-
 % flatten the position of each circuit in a single int
 % adapted from http://vlsicad.eecs.umich.edu/BK/Slots/cache/vlsicad.eecs.umich.edu/BK/BloBB/PAPERS/symcon-06.pdf
 function var int: flattenpos(var int: i, var int: j) = (i * WIDTH) + j;
 array[ELEMENTS] of var int: flatpos;
 constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
+
+array[ELEMENTS] of var int: flatpos_hor;
+constraint forall (e in ELEMENTS) (flatpos_hor[e] = flattenpos(y[e], (WIDTH - cwidth[e]) - x[e]));
+array[ELEMENTS] of var int: flatpos_ver;
+constraint forall (e in ELEMENTS) (flatpos_ver[e] = flattenpos((HEIGHT - cheight[e]) - y[e], x[e]));
+array[ELEMENTS] of var int: flatpos_hor_ver;
+constraint forall (e in ELEMENTS) (flatpos_hor_ver[e] = flattenpos((HEIGHT - cheight[e]) - y[e], (WIDTH - cwidth[e]) - x[e]));
+
+% horizontal, vertical and combined symmetry breaking
+constraint lex_lesseq(flatpos, flatpos_hor);
+constraint lex_lesseq(flatpos, flatpos_ver);
+constraint lex_lesseq(flatpos, flatpos_hor_ver);
 
 % horizontal value symmetry: if two adjacent blocks of the same width are at the same y then they can be swapped
 predicate hor_adjacent(var ELEMENTS: e1, var ELEMENTS: e2) = 
@@ -56,9 +63,6 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[
 % total value symmetry: if two blocks are not adjacent but they have the same width and the same height then they can be swapped
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
-
-% tallest element in (0, 0)
-constraint x[arg_max(cwidth)] = 0 /\ y[arg_max(cwidth)] = 0;
 
 solve :: seq_search([int_search(reverse(sort_by(y, cheight)), input_order, indomain_min),
                      int_search(reverse(sort_by(x, cheight)), input_order, indomain_min)])
