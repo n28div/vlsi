@@ -32,6 +32,11 @@ var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
 constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
+% domain reduction for each element, remove idxs that would make the circuit go out of the board
+constraint forall(e in ELEMENTS) (x[e] <= WIDTH - cwidth[e]);
+constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
+
+
 % horizontal symmetry breaking
 constraint lex_lesseq(x, [(WIDTH - cwidth[e]) - x[e] | e in ELEMENTS]);
 % vertical symmetry breaking

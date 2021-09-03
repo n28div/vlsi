@@ -32,6 +32,10 @@ var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
 constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
+% domain reduction for each element, remove idxs that would make the circuit go out of the board
+constraint forall(e in ELEMENTS) (x[e] <= WIDTH - cwidth[e]);
+constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
+
 % horizontal symmetry breaking
 constraint lex_lesseq(x, [(WIDTH - cwidth[e]) - x[e] | e in ELEMENTS]);
 % vertical symmetry breaking
@@ -54,7 +58,7 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
 % tallest element in (0, 0)
-constraint x[arg_max(cheight)] = 0 /\ y[arg_max(cheight)] = 0;
+constraint x[arg_max(cwidth)] = 0 /\ y[arg_max(cwidth)] = 0;
 
 solve :: seq_search([int_search(reverse(sort_by(y, cheight)), input_order, indomain_min),
                      int_search(reverse(sort_by(x, cheight)), input_order, indomain_min)])
