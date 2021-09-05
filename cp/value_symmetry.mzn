@@ -32,15 +32,27 @@ var int: board_area = WIDTH * HEIGHT;
 array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
 constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
-% horizontal symmetry breaking
-constraint lex_lesseq(x, [(WIDTH - cwidth[e]) - x[e] | e in ELEMENTS]);
-% vertical symmetry breaking
-constraint lex_greatereq(y, [(HEIGHT - cheight[e]) - y[e] | e in ELEMENTS]);
+% domain reduction for each element, remove idxs that would make the circuit go out of the board
+constraint forall(e in ELEMENTS) (x[e] <= WIDTH - cwidth[e]);
+constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
 
 % flatten the position of each circuit in a single int
+% adapted from http://vlsicad.eecs.umich.edu/BK/Slots/cache/vlsicad.eecs.umich.edu/BK/BloBB/PAPERS/symcon-06.pdf
 function var int: flattenpos(var int: i, var int: j) = (i * WIDTH) + j;
 array[ELEMENTS] of var int: flatpos;
 constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
+
+array[ELEMENTS] of var int: flatpos_hor;
+constraint forall (e in ELEMENTS) (flatpos_hor[e] = flattenpos(y[e], (WIDTH - cwidth[e]) - x[e]));
+array[ELEMENTS] of var int: flatpos_ver;
+constraint forall (e in ELEMENTS) (flatpos_ver[e] = flattenpos((HEIGHT - cheight[e]) - y[e], x[e]));
+array[ELEMENTS] of var int: flatpos_hor_ver;
+constraint forall (e in ELEMENTS) (flatpos_hor_ver[e] = flattenpos((HEIGHT - cheight[e]) - y[e], (WIDTH - cwidth[e]) - x[e]));
+
+% horizontal, vertical and combined symmetry breaking
+constraint lex_lesseq(flatpos, flatpos_hor);
+constraint lex_lesseq(flatpos, flatpos_ver);
+constraint lex_lesseq(flatpos, flatpos_hor_ver);
 
 % horizontal value symmetry: if two adjacent blocks of the same width are at the same y then they can be swapped
 predicate hor_adjacent(var ELEMENTS: e1, var ELEMENTS: e2) = 
