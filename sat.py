@@ -1,3 +1,4 @@
+from z3.z3 import Select
 from sat import NaiveModel
 from typing import Dict, Union, List
 from glob import glob
@@ -154,13 +155,22 @@ if __name__ == "__main__":
         data = txt2dict(i)
         
         #create model new everytime so we can change parameter value
-        solver = model(data["WIDTH"], data["cwidth"], data["cwidth"])
-        
+        solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
         # run model
-        is_sat = solver.solve(height=100)
+        solver.solve(height=10)
 
-        if is_sat:
-          print(solver.result.evaluate(solver.board))
+        if solver.solved:
+          #plot_vlsi(data["cwidth"], data["cheight"], solver.x, solver.y, show=True)
+          #pprint([[solver.model.evaluate(solver.board[i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+
+          #print(solver.positions)
+          #print(solver.solver.statistics())
+          import pprint
+          for c in range(solver.N):
+            print("Circuit ", c)
+            #pprint([[solver.model.evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+            pprint.pprint([[solver.solver.model().evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+          #print(solver.result.evaluate(solver.board))
 
         #show report results
         #res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)

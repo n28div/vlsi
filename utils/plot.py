@@ -81,6 +81,8 @@ def plot_vlsi(cwidth: List[int], cheight: List[int], cx: List[int], cy: List[int
     ax.set_xlim(0, max([cwidth[i] + cx[i] for i in range(len(cwidth))]))
     ax.set_title(title)
 
+    if rotations is None: rotations = [False for _ in cwidth]
+
     # load N colors
     colors = plt.cm.get_cmap("tab20", len(cwidth))
     for i, (w, h, x, y, r) in enumerate(zip(cwidth, cheight, cx, cy, rotations)):
