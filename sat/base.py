@@ -1,7 +1,7 @@
 from os import stat
 from typing import Dict, Any, List, Tuple
 import z3
-from z3.z3 import Int
+from z3.z3 import Int, Not
 
 class SatModel(object):
   """
@@ -76,9 +76,6 @@ class SatModel(object):
     """
     if not self.solved:
       raise RuntimeError("Model not solved!")
-
-    pos = [(x, y) for y in range(self.HEIGHT) for x in range(self.WIDTH) for c in range(self.N) if self.solver.model().evaluate(self.iboard[c][y][x])]
-    return pos
 
   @property
   def x(self) -> List[int]:

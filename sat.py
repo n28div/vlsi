@@ -160,7 +160,8 @@ if __name__ == "__main__":
         solver.solve(height=10)
 
         if solver.solved:
-          #plot_vlsi(data["cwidth"], data["cheight"], solver.x, solver.y, show=True)
+          plot_vlsi(data["cwidth"], data["cheight"], solver.x, solver.y, show=True)
+          #print(solver.positions)
           #pprint([[solver.model.evaluate(solver.board[i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
 
           #print(solver.positions)
@@ -169,7 +170,9 @@ if __name__ == "__main__":
           for c in range(solver.N):
             print("Circuit ", c)
             #pprint([[solver.model.evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-            pprint.pprint([[solver.solver.model().evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+            pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+            pprint.pprint([solver.solver.model().evaluate(solver.cy[c][i]) for i in range(solver.HEIGHT)])
+            pprint.pprint([solver.solver.model().evaluate(solver.cx[c][j]) for j in range(solver.WIDTH)])
           #print(solver.result.evaluate(solver.board))
 
         #show report results
