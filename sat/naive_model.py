@@ -117,7 +117,7 @@ class NaiveModel(SatModel):
     for c in range(self.N):
       for i in range(self.HEIGHT - self.cheight[c], self.HEIGHT):
         for j in range(self.WIDTH - self.cwidth[c], self.WIDTH):
-          constraints.append(z3.Not(z3.And(self.cy[c, i], self.cx[c, j])))
+          constraints.append(z3.Not(z3.Or(self.cy[c, i], self.cx[c, j])))
     
     return z3.And(constraints)
           
@@ -136,9 +136,9 @@ class NaiveModel(SatModel):
     
     for c in range(self.N):
       for i in range(self.HEIGHT):
-        for j in range(self.WIDTH):
-          constraints.append(z3.Implies(self.cy[c, i], self._exactly_n(self.cboard[c, i, :], self.cwidth[c])))
-          constraints.append(z3.Implies(self.cx[c, j], self._exactly_n(self.cboard[c, :, j], self.cheight[c])))
+        constraints.append(self._exactly_n(self.cy[c, i], 1))
+      for j in range(self.WIDTH):
+        constraints.append(self._exactly_n(self.cx[c, j], 1))
     
     return z3.And(constraints)
   
@@ -167,8 +167,8 @@ class NaiveModel(SatModel):
     """
     self.solver.add(
       self.cx_cy_leftbottom_constraint(),
-      self.channeling_constraint(),
       self.bound_constraint(),
+      self.channeling_constraint(),
       self.overlapping_constraint(),
-      #self.placement_constraint(),
+      self.placement_constraint(),
     )

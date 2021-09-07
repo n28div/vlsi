@@ -170,7 +170,7 @@ if __name__ == "__main__":
           for c in range(solver.N):
             print("Circuit ", c)
             #pprint([[solver.model.evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-            pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+            #pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
             pprint.pprint([solver.solver.model().evaluate(solver.cy[c][i]) for i in range(solver.HEIGHT)])
             pprint.pprint([solver.solver.model().evaluate(solver.cx[c][j]) for j in range(solver.WIDTH)])
           #print(solver.result.evaluate(solver.board))
