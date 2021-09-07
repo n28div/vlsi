@@ -135,10 +135,8 @@ class NaiveModel(SatModel):
     constraints = list()
     
     for c in range(self.N):
-      for i in range(self.HEIGHT):
-        constraints.append(self._exactly_n(self.cy[c, i], 1))
-      for j in range(self.WIDTH):
-        constraints.append(self._exactly_n(self.cx[c, j], 1))
+      constraints.append(self._exactly_n(self.cy[c, :], 1))
+      constraints.append(self._exactly_n(self.cx[c, :], 1))
 
     
     return z3.And(constraints)
