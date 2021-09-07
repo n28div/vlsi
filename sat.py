@@ -157,8 +157,7 @@ if __name__ == "__main__":
         #create model new everytime so we can change parameter value
         solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
         # run model
-        solver.solve(height=10)
-
+        solver.solve(height=8)
         if solver.solved:
           plot_vlsi(data["cwidth"], data["cheight"], solver.x, solver.y, show=True)
           #print(solver.positions)
@@ -170,7 +169,7 @@ if __name__ == "__main__":
           for c in range(solver.N):
             print("Circuit ", c)
             #pprint([[solver.model.evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-            #pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+            pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
             pprint.pprint([solver.solver.model().evaluate(solver.cy[c][i]) for i in range(solver.HEIGHT)])
             pprint.pprint([solver.solver.model().evaluate(solver.cx[c][j]) for j in range(solver.WIDTH)])
           #print(solver.result.evaluate(solver.board))

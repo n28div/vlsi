@@ -96,8 +96,8 @@ class NaiveModel(SatModel):
           constraints.append(z3.And(self.cy[c, i], self.cx[c, j]) 
                              == 
                              z3.And([self.cboard[c, u, v] 
-                                     for u in range(i, i + self.cheight[c] - 1)
-                                     for v in range(j, j + self.cwidth[c] - 1) if u < self.HEIGHT and v < self.WIDTH]))
+                                     for u in range(i, i + self.cheight[c]-1)
+                                     for v in range(j, j + self.cwidth[c]-1) if u < self.HEIGHT and v < self.WIDTH]))
     
     return z3.And(constraints)
 
