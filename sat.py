@@ -3,12 +3,14 @@ from sat import NaiveModel
 from typing import Dict, Union, List
 from glob import glob
 from utils.plot import plot_vlsi, plot_multi_vlsi
+from utils.determine_hbound import  greedy_height
 from natsort import natsorted
 import sys, os
 import wandb
 from datetime import timedelta
 import csv
 import time
+import numpy as np
 
 def enumerate_models() -> List[str]:
   """
@@ -151,11 +153,30 @@ if __name__ == "__main__":
       instance_num = 1
       for i in instances:
         print("%s %s %s %s %s" % ("-" * 5, model, "-" * 3, i, "-" * 5))
-        best_found = 51 #determine_height();
+
         best_x = []
         best_y = []
         solving = True
         data = txt2dict(i)
+
+        print(data["cwidth"])
+        print(data["cheight"])
+        h_array = np.array(data["cheight"])
+        w_array = np.array(data["cwidth"])
+        idx = np.argsort(h_array)
+
+        h_array = np.array(h_array)[idx]
+        w_array = np.array(w_array)[idx]
+
+        h_sorted = h_array.tolist()
+        w_sorted = w_array.tolist()
+
+        print(w_sorted)
+        print(h_sorted)
+        w_sorted.reverse()
+        h_sorted.reverse()
+        best_found = greedy_height(data["N"], data["WIDTH"], w_sorted, h_sorted, 0 , 0 , 0, 1);
+        print(best_found)
         solving_start = time.perf_counter()
 
         while(solving):
