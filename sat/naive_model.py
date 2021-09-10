@@ -88,16 +88,18 @@ class NaiveModel(SatModel):
     return z3.And(constraints)
 
   def channeling_constraint(self) -> z3.BoolRef:
+    """
+    Only channel if position is in bound
+    """
+
     constraints = list()
 
     for c in range(self.N):
-      for i in range(self.HEIGHT):
-        for j in range(self.WIDTH):
+      for i in range(self.HEIGHT - self.cheight[c] + 1):
+        for j in range(self.WIDTH - self.cwidth[c] + 1):
           constraints.append(z3.And(self.cy[c, i], self.cx[c, j]) 
-                             == 
-                             z3.And([self.cboard[c, i + u, j + v] 
-                                     for u in range(self.cheight[c])
-                                     for v in range(self.cwidth[c]) if (i + u) < self.HEIGHT and (j + v) < self.WIDTH]))
+                              == 
+                              z3.And([self.cboard[c, i + u, j + v] for u in range(self.cheight[c]) for v in range(self.cwidth[c])]))
     
     return z3.And(constraints)
 
@@ -115,8 +117,8 @@ class NaiveModel(SatModel):
     constraints = list()
     
     for c in range(self.N):
-      for i in range(self.HEIGHT - self.cheight[c], self.HEIGHT):
-        for j in range(self.WIDTH - self.cwidth[c], self.WIDTH):
+      for i in range(self.HEIGHT - self.cheight[c] + 1, self.HEIGHT):
+        for j in range(self.WIDTH - self.cwidth[c] + 1, self.WIDTH):
           constraints.append(z3.Not(z3.Or(self.cy[c, i], self.cx[c, j])))
     
     return z3.And(constraints)
@@ -166,8 +168,8 @@ class NaiveModel(SatModel):
     """
     self.solver.add(
       self.cx_cy_leftbottom_constraint(),
-      self.channeling_constraint(),
       self.bound_constraint(),
+      self.channeling_constraint(),
       self.overlapping_constraint(),
       self.placement_constraint(),
     )
