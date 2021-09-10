@@ -12,6 +12,8 @@ import csv
 import time
 import numpy as np
 
+
+
 def enumerate_models() -> List[str]:
   """
   Enumerate implemented models.
@@ -159,8 +161,6 @@ if __name__ == "__main__":
         solving = True
         data = txt2dict(i)
 
-        print(data["cwidth"])
-        print(data["cheight"])
         h_array = np.array(data["cheight"])
         w_array = np.array(data["cwidth"])
         idx = np.argsort(h_array)
@@ -171,19 +171,17 @@ if __name__ == "__main__":
         h_sorted = h_array.tolist()
         w_sorted = w_array.tolist()
 
-        print(w_sorted)
-        print(h_sorted)
+
         w_sorted.reverse()
         h_sorted.reverse()
-        best_found = greedy_height(data["N"], data["WIDTH"], w_sorted, h_sorted, 0 , 0 , 0, 1);
-        print(best_found)
+        best_found = greedy_height(data["N"], data["WIDTH"], w_sorted, h_sorted, 0 , 0 , 0, 1)
         solving_start = time.perf_counter()
 
         while(solving):
           #create model new everytime so we can change parameter value
           solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
           # run model
-          solver.solve(height=best_found-1)
+          solver.solve(height=best_found)
 
           if solver.solved:
             best_found -= 1
