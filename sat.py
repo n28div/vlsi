@@ -107,11 +107,11 @@ if __name__ == "__main__":
 
     import argparse
     # define CLI arguments
-    #parser = argparse.ArgumentParser(description="Run minizinc vlsi solving method")
+    parser = argparse.ArgumentParser(description="Run minizinc vlsi solving method")
     #parser.add_argument("--models", "-m", nargs="*", type=str,
     #                    required=True, help="Model(s) to use. Leave empty to use all.")
-    #parser.add_argument("--instances", "-i", nargs="*", type=str,
-    #                    required=True, help="Instances(s) to load. Leave empty to use all.")
+    parser.add_argument("--instances", "-i", nargs="*", type=str,
+                        required=True, help="Instances(s) to load. Leave empty to use all.")
     #parser.add_argument("--wandb", "-wandb", action="store_true", help="Log data using wandb.")
     #parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
     #parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
@@ -120,13 +120,12 @@ if __name__ == "__main__":
     #                    help="Execution time contraint in seconds. Defaults to 300s (5m).")
                         
     # parse CLI arguments
-    #args = parser.parse_args()
+    args = parser.parse_args()
     # use specified models or use all models if left empty
     #models = args.models if len(args.models) > 0 else enumerate_models()
     models = [NaiveModel]
     # load specified instances or load all instances if left empty
-    #instances = args.instances if len(args.instances) > 0 else enumerate_instances()
-    instances = [enumerate_instances()[0]]
+    instances = args.instances if len(args.instances) > 0 else enumerate_instances()
     
     # execute each model
     for model in models:
@@ -157,7 +156,7 @@ if __name__ == "__main__":
         #create model new everytime so we can change parameter value
         solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
         # run model
-        solver.solve(height=8)
+        solver.solve(height=10)
         if solver.solved:
           plot_vlsi(data["cwidth"], data["cheight"], solver.x, solver.y, show=True)
           #print(solver.positions)
