@@ -19,11 +19,11 @@ class NaiveModel(SatModel):
       * cboard - occupation of each circuit
     """
     # build cboard
-    self.cboard = np.array([[[z3.Bool(f"cb_{c}_{i}_{j}") for j in range(self.WIDTH)] for i in range(self.HEIGHT)] for c in range(self.N)])
+    self.cboard = z3.Array([[[z3.Bool(f"cb_{c}_{i}_{j}") for j in range(self.WIDTH)] for i in range(self.HEIGHT)] for c in range(self.N)])
     # cx
-    self.cx = np.array([[z3.Bool(f"cx_{c}_{j}") for j in range(self.WIDTH)] for c in range(self.N)])
+    self.cx = z3.Array('x', z3.IntSort(), z3.IntSort())
     # cy
-    self.cy = np.array([[z3.Bool(f"cy_{c}_{i}") for i in range(self.HEIGHT)] for c in range(self.N)])
+    self.cy = z3.Array('y', z3.IntSort(), z3.IntSort())
 
   def _idxs_positions(self):
     """
@@ -35,13 +35,7 @@ class NaiveModel(SatModel):
     idxs = list()
 
     for c in range(self.N):
-      for i in range(self.HEIGHT):
-        if self.solver.model().evaluate(self.cy[c, i]):
-          for j in range(self.WIDTH):
-            if self.solver.model().evaluate(self.cx[c, j]):
-              idxs.append((j, i))
-              break
-          break
+      idxs.append((self.solver.model().evaluate(self.cx[c]), self.solver.model().evaluate(self.cy[c])))
 
     return idxs
 
@@ -78,15 +72,6 @@ class NaiveModel(SatModel):
     """
     return z3.And(self._at_least_n(vars, n), self._at_most_n(list(vars), n))
 
-  def cx_cy_leftbottom_constraint(self) -> z3.BoolRef:
-    constraints = list()
-
-    for c in range(self.N):
-      constraints.append(self._exactly_n(self.cx[c], 1))
-      constraints.append(self._exactly_n(self.cy[c], 1))
-
-    return z3.And(constraints)
-
   def channeling_constraint(self) -> z3.BoolRef:
     """
     Only channel if position is in bound
@@ -95,13 +80,10 @@ class NaiveModel(SatModel):
     constraints = list()
 
     for c in range(self.N):
-      for i in range(self.HEIGHT - self.cheight[c] + 1):
-        for j in range(self.WIDTH - self.cwidth[c] + 1):
-          constraints.append(z3.And(self.cy[c, i], self.cx[c, j])
-                              ==
-                              z3.And([self.cboard[c, i + u, j + v] for u in range(self.cheight[c]) for v in range(self.cwidth[c])]))
-
-    return z3.And(constraints)
+      for i in range(self.cheight[c]):
+        for j in range(self.cwidth[c]):
+          constraints.append(self.cboard[c, z3.Select(self.cy, c)+i, z3.Select(self.cx, c)+j])
+      return z3.And(constraints)
 
   def bound_constraint(self) -> z3.BoolRef:
     """
@@ -189,11 +171,10 @@ class NaiveModel(SatModel):
     Post constraints on the model
     """
     self.solver.add(
-      self.cx_cy_leftbottom_constraint(),
-      self.bound_constraint(),
+      #self.bound_constraint(),
       self.channeling_constraint(),
       self.overlapping_constraint(),
-      self.placement_constraint(),
-      self.horizontal_symmetry(),
-      self.vertical_symmetry(),
+      #self.placement_constraint(),
+      #self.horizontal_symmetry(),
+      #self.vertical_symmetry(),
     )
