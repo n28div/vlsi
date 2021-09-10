@@ -42,7 +42,7 @@ class NaiveModel(SatModel):
               idxs.append((j, i))
               break
           break
-    
+
     return idxs
 
   def _at_most_n(self, vars: List, n: int) -> z3.BoolRef:
@@ -84,7 +84,7 @@ class NaiveModel(SatModel):
     for c in range(self.N):
       constraints.append(self._exactly_n(self.cx[c], 1))
       constraints.append(self._exactly_n(self.cy[c], 1))
-    
+
     return z3.And(constraints)
 
   def channeling_constraint(self) -> z3.BoolRef:
@@ -97,10 +97,10 @@ class NaiveModel(SatModel):
     for c in range(self.N):
       for i in range(self.HEIGHT - self.cheight[c] + 1):
         for j in range(self.WIDTH - self.cwidth[c] + 1):
-          constraints.append(z3.And(self.cy[c, i], self.cx[c, j]) 
-                              == 
+          constraints.append(z3.And(self.cy[c, i], self.cx[c, j])
+                              ==
                               z3.And([self.cboard[c, i + u, j + v] for u in range(self.cheight[c]) for v in range(self.cwidth[c])]))
-    
+
     return z3.And(constraints)
 
   def bound_constraint(self) -> z3.BoolRef:
@@ -115,14 +115,14 @@ class NaiveModel(SatModel):
         z3.BoolRef: Constraint to be placed on solver
     """
     constraints = list()
-    
+
     for c in range(self.N):
       for i in range(self.HEIGHT - self.cheight[c] + 1, self.HEIGHT):
         for j in range(self.WIDTH - self.cwidth[c] + 1, self.WIDTH):
           constraints.append(z3.Not(z3.Or(self.cy[c, i], self.cx[c, j])))
-    
+
     return z3.And(constraints)
-          
+
   def placement_constraint(self) -> z3.BoolRef:
     """
     For each circuit in indexes one and only one index can be true
@@ -135,14 +135,14 @@ class NaiveModel(SatModel):
         z3.BoolRef: Constraint to be placed on solver
     """
     constraints = list()
-    
+
     for c in range(self.N):
       constraints.append(self._exactly_n(self.cy[c, :], 1))
       constraints.append(self._exactly_n(self.cx[c, :], 1))
 
-    
+
     return z3.And(constraints)
-  
+
   def overlapping_constraint(self) -> z3.BoolRef:
     """
     Overlapping constraint between two circuits. Only one circuit can be at index (i,j).
@@ -155,13 +155,35 @@ class NaiveModel(SatModel):
         z3.BoolRef: Constraint to be placed on solver
     """
     constraints = list()
-    
+
     for i in range(self.HEIGHT):
       for j in range(self.WIDTH):
         constraints.append(self._at_most_n(self.cboard[:, i, j], 1))
 
     return z3.And(constraints)
-     
+
+  def area_constraint(self) -> z3.BoolRef:
+    total_area = 0
+    for c in range(self.N):
+      total_area += self.cheight[c] * self.cwidth[c]
+    board_area = self.WIDTH * self.HEIGHT
+
+  def horizontal_symmetry(self):
+
+    constraints = list()
+    for c in range(self.N):
+      for i in range(self.WIDTH):
+        z3.Xor(self.cx[c, i], self.cx[c, self.WIDTH-self.cwidth[c] - i])
+    return z3.And(constraints)
+
+  def vertical_symmetry(self):
+
+    constraints = list()
+    for c in range(self.N):
+      for i in range(self.HEIGHT):
+        z3.Xor(self.cy[c, i], self.cy[c, self.HEIGHT-self.cheight[c] - i])
+    return z3.And(constraints)
+
   def post_constraints(self):
     """
     Post constraints on the model
@@ -172,4 +194,6 @@ class NaiveModel(SatModel):
       self.channeling_constraint(),
       self.overlapping_constraint(),
       self.placement_constraint(),
+      self.horizontal_symmetry(),
+      self.vertical_symmetry(),
     )

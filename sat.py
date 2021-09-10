@@ -167,28 +167,26 @@ if __name__ == "__main__":
 
         h_array = np.array(h_array)[idx]
         w_array = np.array(w_array)[idx]
-
+        lower_bound = int(np.dot(h_array,w_array)/data["WIDTH"])
         h_sorted = h_array.tolist()
         w_sorted = w_array.tolist()
 
 
         w_sorted.reverse()
         h_sorted.reverse()
-        best_found = greedy_height(data["N"], data["WIDTH"], w_sorted, h_sorted, 0 , 0 , 0, 1)
+        upper_bound = greedy_height(data["N"], data["WIDTH"], w_sorted, h_sorted, 0 , 0 , 0, 1)
         solving_start = time.perf_counter()
 
-        while(solving):
+        for h in range(upper_bound, lower_bound-1, -1):
           #create model new everytime so we can change parameter value
           solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
           # run model
-          solver.solve(height=best_found)
-
+          solver.solve(height=h)
           if solver.solved:
-            best_found -= 1
             best_x = solver.x
             best_y = solver.y
           else:
-            solving = False
+            break
 
         solving_end = time.perf_counter()
         print(f"Solving took {solving_end - solving_start:04f} seconds")
