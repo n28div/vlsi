@@ -8,6 +8,7 @@ import sys, os
 import wandb
 from datetime import timedelta
 import csv
+import time
 
 def enumerate_models() -> List[str]:
   """
@@ -150,27 +151,41 @@ if __name__ == "__main__":
       instance_num = 1
       for i in instances:
         print("%s %s %s %s %s" % ("-" * 5, model, "-" * 3, i, "-" * 5))
-
+        best_found = 51 #determine_height();
+        best_x = []
+        best_y = []
+        solving = True
         data = txt2dict(i)
-        
-        #create model new everytime so we can change parameter value
-        solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
-        # run model
-        solver.solve(height=10)
-        if solver.solved:
-          plot_vlsi(data["cwidth"], data["cheight"], solver.x, solver.y, show=True)
-          #print(solver.positions)
-          #pprint([[solver.model.evaluate(solver.board[i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+        solving_start = time.perf_counter()
 
-          #print(solver.positions)
-          #print(solver.solver.statistics())
-          import pprint
-          for c in range(solver.N):
-            print("Circuit ", c)
-            #pprint([[solver.model.evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-            pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-            pprint.pprint([solver.solver.model().evaluate(solver.cy[c][i]) for i in range(solver.HEIGHT)])
-            pprint.pprint([solver.solver.model().evaluate(solver.cx[c][j]) for j in range(solver.WIDTH)])
+        while(solving):
+          #create model new everytime so we can change parameter value
+          solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
+          # run model
+          solver.solve(height=best_found-1)
+
+          if solver.solved:
+            best_found -= 1
+            best_x = solver.x
+            best_y = solver.y
+          else:
+            solving = False
+
+        solving_end = time.perf_counter()
+        print(f"Solving took {solving_end - solving_start:04f} seconds")
+        plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=True)
+        #print(solver.positions)
+        #pprint([[solver.model.evaluate(solver.board[i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+
+        #print(solver.positions)
+        #print(solver.solver.statistics())
+        import pprint
+        for c in range(solver.N):
+          print("Circuit ", c)
+          #pprint([[solver.model.evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+          #pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+          #pprint.pprint([solver.solver.model().evaluate(solver.cy[c][i]) for i in range(solver.HEIGHT)])
+          #pprint.pprint([solver.solver.model().evaluate(solver.cx[c][j]) for j in range(solver.WIDTH)])
           #print(solver.result.evaluate(solver.board))
 
         #show report results
