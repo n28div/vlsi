@@ -13,7 +13,6 @@ import time
 import numpy as np
 
 
-
 def enumerate_models() -> List[str]:
   """
   Enumerate implemented models.
@@ -158,53 +157,34 @@ if __name__ == "__main__":
 
         best_x = []
         best_y = []
-        solving = True
         data = txt2dict(i)
 
-        h_array = np.array(data["cheight"])
-        w_array = np.array(data["cwidth"])
-        idx = np.argsort(h_array)
+        # sort height and width by height
+        h_w = sorted(zip(data["cheight"], data["cwidth"]), reverse=True, key=lambda x: x[0])
+        sheight, swidth = zip(*h_w)
+        upper_bound = greedy_height(data["N"], data["WIDTH"], sheight, swidth)
 
-        h_array = np.array(h_array)[idx]
-        w_array = np.array(w_array)[idx]
-        lower_bound = int(np.dot(h_array,w_array)/data["WIDTH"])
-        h_sorted = h_array.tolist()
-        w_sorted = w_array.tolist()
-
-
-        w_sorted.reverse()
-        h_sorted.reverse()
-        upper_bound = greedy_height(data["N"], data["WIDTH"], w_sorted, h_sorted, 0 , 0 , 0, 1)
-        solving_start = time.perf_counter()
-
+        # compute lower bound
+        lower_bound = int(sum([h * w for h, w in h_w]) / data["WIDTH"])
+        
         for h in range(upper_bound, lower_bound-1, -1):
+          print(f"Trying height = {h}\r", end="")
+
           #create model new everytime so we can change parameter value
           solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
           # run model
           solver.solve(height=h)
+          
           if solver.solved:
             best_x = solver.x
             best_y = solver.y
           else:
             break
 
-        solving_end = time.perf_counter()
-        print(f"Solving took {solving_end - solving_start:04f} seconds")
+        print(f"Posting constraints took {solver.time['constraint']:04f} seconds")
+        print(f"Solving took {solver.time['solve']:04f} seconds")
         plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=True)
-        #print(solver.positions)
-        #pprint([[solver.model.evaluate(solver.board[i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-
-        #print(solver.positions)
-        #print(solver.solver.statistics())
-        import pprint
-        for c in range(solver.N):
-          print("Circuit ", c)
-          #pprint([[solver.model.evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-          #pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-          #pprint.pprint([solver.solver.model().evaluate(solver.cy[c][i]) for i in range(solver.HEIGHT)])
-          #pprint.pprint([solver.solver.model().evaluate(solver.cx[c][j]) for j in range(solver.WIDTH)])
-          #print(solver.result.evaluate(solver.board))
-
+        
         #show report results
         #res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
         #solved_time = res[0]

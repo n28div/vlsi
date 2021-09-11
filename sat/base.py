@@ -2,6 +2,7 @@ from os import stat
 from typing import Dict, Any, List, Tuple
 import z3
 from z3.z3 import Int, Not
+import time
 
 class SatModel(object):
   """
@@ -22,6 +23,8 @@ class SatModel(object):
     self.cheight = cheight
     
     self.solver = z3.Solver()
+    self.solving_time = -1
+    self.constraint_posting_time = -1
 
   def setup(self):
     """
@@ -59,13 +62,18 @@ class SatModel(object):
     """
     # Setup the encoding
     self.HEIGHT = height
+    
+    self.constraint_posting_time = time.perf_counter()
     self.setup()
     
     # Post the constraints
     self.post_constraints()
-
+    self.constraint_posting_time = time.perf_counter() - self.constraint_posting_time
+    
     # Search for feasible solution
+    self.solved_time = time.perf_counter()    
     self.solver.check()
+    self.solved_time = time.perf_counter() - self.solved_time
 
   def _idxs_positions(self) -> List[Tuple[int, int]]:
     """
@@ -101,7 +109,16 @@ class SatModel(object):
     """
     return self.x, self.y
 
-
+  @property
+  def time(self) -> Dict:
+    """
+    Returns:
+      Dict: Time taken to solve the instance, split into constraint posting and actual solving
+    """
+    return {
+      "constraint": self.constraint_posting_time,
+      "solve": self.solved_time
+    }
 
   """
   @property
