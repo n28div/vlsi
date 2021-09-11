@@ -17,6 +17,8 @@ class NaiveModel(SatModel):
     """
     Builds boards encodings:
       * cboard - occupation of each circuit
+      * cx - column occupied by circuit c
+      * cy - row occupied by circuit c
     """
     # build cboard
     self.cboard = np.array([[[z3.Bool(f"cb_{c}_{i}_{j}") for j in range(self.WIDTH)] for i in range(self.HEIGHT)] for c in range(self.N)])
@@ -79,6 +81,9 @@ class NaiveModel(SatModel):
     return z3.And(self._at_least_n(vars, n), self._at_most_n(list(vars), n))
 
   def cx_cy_leftbottom_constraint(self) -> z3.BoolRef:
+    """
+    Ensure that only one bottom left index is set
+    """
     constraints = list()
 
     for c in range(self.N):
@@ -91,7 +96,6 @@ class NaiveModel(SatModel):
     """
     Only channel if position is in bound
     """
-
     constraints = list()
 
     for c in range(self.N):
@@ -161,12 +165,6 @@ class NaiveModel(SatModel):
         constraints.append(self._at_most_n(self.cboard[:, i, j], 1))
 
     return z3.And(constraints)
-
-  def area_constraint(self) -> z3.BoolRef:
-    total_area = 0
-    for c in range(self.N):
-      total_area += self.cheight[c] * self.cwidth[c]
-    board_area = self.WIDTH * self.HEIGHT
 
   def horizontal_symmetry(self):
 
