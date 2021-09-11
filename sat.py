@@ -181,6 +181,7 @@ if __name__ == "__main__":
           else:
             break
 
+        print(f"Instance solved with min height {h}")
         print(f"Posting constraints took {solver.time['constraint']:04f} seconds")
         print(f"Solving took {solver.time['solve']:04f} seconds")
         plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=True)
