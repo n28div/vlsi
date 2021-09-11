@@ -166,22 +166,6 @@ class NaiveModel(SatModel):
 
     return z3.And(constraints)
 
-  def horizontal_symmetry(self):
-
-    constraints = list()
-    for c in range(self.N):
-      for i in range(self.WIDTH):
-        z3.Xor(self.cx[c, i], self.cx[c, self.WIDTH-self.cwidth[c] - i])
-    return z3.And(constraints)
-
-  def vertical_symmetry(self):
-
-    constraints = list()
-    for c in range(self.N):
-      for i in range(self.HEIGHT):
-        z3.Xor(self.cy[c, i], self.cy[c, self.HEIGHT-self.cheight[c] - i])
-    return z3.And(constraints)
-
   def post_constraints(self):
     """
     Post constraints on the model
@@ -191,7 +175,5 @@ class NaiveModel(SatModel):
       self.bound_constraint(),
       self.channeling_constraint(),
       self.overlapping_constraint(),
-      self.placement_constraint(),
-      self.horizontal_symmetry(),
-      self.vertical_symmetry(),
+      self.placement_constraint()
     )

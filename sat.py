@@ -1,5 +1,5 @@
 from z3.z3 import Select
-from sat import NaiveModel
+from sat import NaiveModel, SymmetryModel
 from typing import Dict, Union, List
 from glob import glob
 from utils.plot import plot_vlsi, plot_multi_vlsi
@@ -19,7 +19,7 @@ def enumerate_models() -> List[str]:
 
   Returns: List[str]: List of implemented models, sorted by number
   """
-  return natsorted(glob("cp/*.mzn"))
+  return [NaiveModel, SymmetryModel]
 
 
 def enumerate_instances() -> List[str]:
@@ -112,13 +112,13 @@ if __name__ == "__main__":
     import argparse
     # define CLI arguments
     parser = argparse.ArgumentParser(description="Run minizinc vlsi solving method")
-    #parser.add_argument("--models", "-m", nargs="*", type=str,
-    #                    required=True, help="Model(s) to use. Leave empty to use all.")
+    parser.add_argument("--models", "-m", nargs="*", type=str,
+                        required=True, help="Model(s) to use. Leave empty to use all.")
     parser.add_argument("--instances", "-i", nargs="*", type=str,
                         required=True, help="Instances(s) to load. Leave empty to use all.")
     #parser.add_argument("--wandb", "-wandb", action="store_true", help="Log data using wandb.")
     #parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
-    #parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
+    parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
     #parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
     #parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
     #                    help="Execution time contraint in seconds. Defaults to 300s (5m).")
@@ -126,8 +126,8 @@ if __name__ == "__main__":
     # parse CLI arguments
     args = parser.parse_args()
     # use specified models or use all models if left empty
-    #models = args.models if len(args.models) > 0 else enumerate_models()
-    models = [NaiveModel]
+    models = args.models if len(args.models) > 0 else enumerate_models()
+    models = [eval(m) for m in models]
     # load specified instances or load all instances if left empty
     instances = args.instances if len(args.instances) > 0 else enumerate_instances()
     
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         lower_bound = int(sum([h * w for h, w in h_w]) / data["WIDTH"])
         
         for h in range(upper_bound, lower_bound-1, -1):
-          print(f"Trying height = {h}\r", end="")
+          print(f"height = {h:5}\r", end="")
 
           #create model new everytime so we can change parameter value
           solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
@@ -184,7 +184,7 @@ if __name__ == "__main__":
         print(f"Instance solved with min height {h}")
         print(f"Posting constraints took {solver.time['constraint']:04f} seconds")
         print(f"Solving took {solver.time['solve']:04f} seconds")
-        plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=True)
+        plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot)
         
         #show report results
         #res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
