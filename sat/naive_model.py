@@ -13,20 +13,6 @@ class NaiveModel(SatModel):
   Fixed width and not overlapping circuits constraints are posted.
   """
 
-  def setup(self):
-    """
-    Builds boards encodings:
-      * cboard - occupation of each circuit
-      * cx - column occupied by circuit c
-      * cy - row occupied by circuit c
-    """
-    # build cboard
-    self.cboard = np.array([[[z3.Bool(f"cb_{c}_{i}_{j}") for j in range(self.WIDTH)] for i in range(self.HEIGHT)] for c in range(self.N)])
-    # cx
-    self.cx = np.array([[z3.Bool(f"cx_{c}_{j}") for j in range(self.WIDTH)] for c in range(self.N)])
-    # cy
-    self.cy = np.array([[z3.Bool(f"cy_{c}_{i}") for i in range(self.HEIGHT)] for c in range(self.N)])
-
   def _idxs_positions(self):
     """
     Returns:
@@ -160,20 +146,27 @@ class NaiveModel(SatModel):
     """
     constraints = list()
 
-    for i in range(self.HEIGHT):
+    for i in range(self.HEIGHT_UB):
       for j in range(self.WIDTH):
         constraints.append(self._at_most_n(self.cboard[:, i, j], 1))
 
     return z3.And(constraints)
 
-  def post_constraints(self):
+  def post_static_constraints(self):
+    """
+    Post static constraints
+    """
+    self.solver.add(
+      self.cx_cy_leftbottom_constraint(),
+      self.placement_constraint(),
+      self.overlapping_constraint()
+    )
+
+  def post_dynamic_constraints(self):
     """
     Post constraints on the model
     """
     self.solver.add(
-      self.cx_cy_leftbottom_constraint(),
       self.bound_constraint(),
-      self.channeling_constraint(),
-      self.overlapping_constraint(),
-      self.placement_constraint()
+      self.channeling_constraint()
     )

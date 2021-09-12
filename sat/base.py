@@ -3,44 +3,78 @@ from typing import Dict, Any, List, Tuple
 import z3
 from z3.z3 import Int, Not
 import time
+import numpy as np
 
 class SatModel(object):
   """
   Sat model implementing some common logic between solvers such as input interface, output interface etc.
   """
 
-  def __init__(self, width: int, cwidth: List[int], cheight: List[int]):
+  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int):
     """Initialize solver and attributes
 
     Args:
         width (int): Boards width
         cwidth (List[int]): Width of each circuit
         cheight (List[int]): Height of each circuit
+        lb (int): Height lower bound
+        ub (int): Height upper bound
     """    
     self.N = len(cwidth)
     self.WIDTH = width
     self.cwidth = cwidth
     self.cheight = cheight
     
+    self.HEIGHT_LB = lb
+    self.HEIGHT_UB = ub
+    
+    # build the board representation
+    self.setup()
+
     self.solver = z3.Solver()
+    self.post_static_constraints()
+    # create backtracking point
+    self.solver.push()
+
     self.solving_time = -1
     self.constraint_posting_time = -1
 
   def setup(self):
     """
-    Method used to setup the model, creating needed variables and posting required constraints
-    Raises:
-        NotImplementedError: If not overriden raises not implemented error
-    """
-    raise NotImplementedError
+    Builds boards encodings:
+      * cboard - occupation of each circuit
+      * cx - column occupied by circuit c
+      * cy - row occupied by circuit c
 
-  def post_constraints(self):
-    """Method used to post constraints on the model
+    Board is built as high as upper bounds goes so that it can be reused.
+    """
+    # build cboard
+    self.cboard = np.array([[[z3.Bool(f"cb_{c}_{i}_{j}") for j in range(self.WIDTH)] for i in range(self.HEIGHT_UB)] for c in range(self.N)])
+    # cx
+    self.cx = np.array([[z3.Bool(f"cx_{c}_{j}") for j in range(self.WIDTH)] for c in range(self.N)])
+    # cy
+    self.cy = np.array([[z3.Bool(f"cy_{c}_{i}") for i in range(self.HEIGHT_UB)] for c in range(self.N)])
+
+  def post_static_constraints(self):
+    """
+    Method used to post static constraints on the model 
+    e.g. those contraints that do not depend on the height that is being tried
+    
     Raises:
         NotImplementedError: If not overriden raises not implemented error
     """
     raise NotImplementedError
   
+  def post_dynamic_constraints(self):
+    """
+    Method used to post dynamic constraints on the model 
+    e.g. those contraints that do depend on the height that is being tried
+    
+    Raises:
+        NotImplementedError: If not overriden raises not implemented error
+    """
+    raise NotImplementedError
+
   @property
   def solved(self) -> bool:
     """
@@ -53,24 +87,31 @@ class SatModel(object):
     except:
       return False
 
-  def solve(self, height: int, *args, **kwargs):
+  def solve(self, height: int):
     """
     Solve the model
 
     Args:
         height (int): Height of the board
     """
-    # Setup the encoding
+    # set the current height
     self.HEIGHT = height
     
+    # backtrack to the latest available point e.g. without dynamic constraints
+    self.solver.pop()
+
+    # post height constraint: forbid heights bigger than h    
+    self.solver.add(z3.And([z3.Not(self.cy[c, i])
+                            for c in range(self.N)
+                            for i in range(self.HEIGHT, self.HEIGHT_UB)]))
+
+    # post dynamic constraints
     self.constraint_posting_time = time.perf_counter()
-    self.setup()
-    
-    # Post the constraints
-    self.post_constraints()
+    self.post_dynamic_constraints()
     self.constraint_posting_time = time.perf_counter() - self.constraint_posting_time
-    
-    # Search for feasible solution
+    self.solver.push()
+
+    # search for a solution
     self.solved_time = time.perf_counter()    
     self.solver.check()
     self.solved_time = time.perf_counter() - self.solved_time
@@ -119,9 +160,3 @@ class SatModel(object):
       "constraint": self.constraint_posting_time,
       "solve": self.solved_time
     }
-
-  """
-  @property
-  def statistics(self) -> Dict[str, Any]:
-    if self.solved:
-  """

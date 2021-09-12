@@ -167,18 +167,19 @@ if __name__ == "__main__":
         # compute lower bound
         lower_bound = int(sum([h * w for h, w in h_w]) / data["WIDTH"])
         
+        #create model new everytime so we can change parameter value
+        solver = model(data["WIDTH"], data["cwidth"], data["cheight"], lower_bound, upper_bound)  
+
         start_t = time.perf_counter()
         for h in range(upper_bound, lower_bound-1, -1):
           print(f"Height = {h:3} ", end=" ")
 
-          #create model new everytime so we can change parameter value
-          solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
           # run model
           solver.solve(height=h)
 
           print(f"[ posting constraints: {solver.time['constraint']:04f}s", end=" ")
           print(f"actual solving: {solver.time['solve']:04f}s]")
-          
+
           if solver.solved:
             best_x = solver.x
             best_y = solver.y

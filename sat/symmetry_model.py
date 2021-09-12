@@ -26,19 +26,24 @@ class SymmetryModel(NaiveModel):
     else:
       return z3.Or(z3.And(z3.Not(a[0]), b[0]), self._lex_lesseq(a[1:], b[1:]))
 
-  def horizontal_symmetry(self):
-    return z3.And([self._lex_lesseq(self.cx[c], np.flip(self.cx[c])) for c in range(self.N)])
+  def symmetry_breaking_constraint(self):
+    constraints = list()
 
-  def vertical_symmetry(self):
-    return z3.And([self._lex_lesseq(self.cy[c], np.flip(self.cy[c])) for c in range(self.N)])
+    for c in range(self.N):
+      flattened = [self.cboard[c][i][j] for i in range(self.HEIGHT) for j in range(self.WIDTH)]
+      hor_symm = [self.cboard[c][i][j] for i in range(self.HEIGHT) for j in reversed(range(self.WIDTH))]
+      ver_symm = [self.cboard[c][i][j] for i in reversed(range(self.HEIGHT)) for j in range(self.WIDTH)]
+      hor_ver_symm = [self.cboard[c][i][j] for i in reversed(range(self.HEIGHT)) for j in reversed(range(self.WIDTH))]
 
-  def post_constraints(self):
+      constraints.append(self._lex_lesseq(flattened, hor_symm))
+      constraints.append(self._lex_lesseq(flattened, ver_symm))
+      constraints.append(self._lex_lesseq(flattened, hor_ver_symm))
+    
+    return z3.And(constraints)
+
+  def post_dynamic_constraints(self):
     """
     Post constraints on the model
     """
-    super().post_constraints()
-    
-    self.solver.add(
-      self.horizontal_symmetry(),
-      self.vertical_symmetry(),
-    )
+    super().post_dynamic_constraints()
+    self.solver.add(self.symmetry_breaking_constraint())
