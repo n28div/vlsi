@@ -169,23 +169,24 @@ if __name__ == "__main__":
         
         start_t = time.perf_counter()
         for h in range(upper_bound, lower_bound-1, -1):
-          print(f"height = {h:5}\r", end="")
+          print(f"Height = {h:3} ", end=" ")
 
           #create model new everytime so we can change parameter value
           solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
           # run model
           solver.solve(height=h)
+
+          print(f"[ posting constraints: {solver.time['constraint']:04f}s", end=" ")
+          print(f"actual solving: {solver.time['solve']:04f}s]")
           
           if solver.solved:
             best_x = solver.x
             best_y = solver.y
           else:
             break
-          end_t = time.perf_counter()
+        end_t = time.perf_counter()
 
-        print(f"Instance solved in {end_t - start_t:04f}s with min height {h}")
-        print(f"Posting constraints took {solver.time['constraint']:04f} seconds")
-        print(f"Solving took {solver.time['solve']:04f} seconds")
+        print(f"Solved with h={h} in {end_t - start_t:04f} seconds")
         plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot)
         
         #show report results
