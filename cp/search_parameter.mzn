@@ -8,7 +8,13 @@ set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
 array[ELEMENTS] of int: cheight;
 
-int: y_ub = greedy_height(N, WIDTH, reverse(sort_by(cwidth, cheight)), reverse(sort(cheight)), 0, 0, 0, 1);
+% get the permutation that sorts cheight
+array[ELEMENTS] of ELEMENTS: sorted_idxs = reverse(arg_sort(cheight));
+% sort cheight and cwidth by cheight
+array[ELEMENTS] of int: s_cwidth = [cwidth[sorted_idxs[e]] | e in ELEMENTS];
+array[ELEMENTS] of int: s_cheight = [cheight[sorted_idxs[e]] | e in ELEMENTS];
+
+int: y_ub = greedy_height(N, WIDTH, s_cwidth, s_cheight, 0, 0, 0, 1);
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
 
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
@@ -64,8 +70,8 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
-solve :: seq_search([int_search(reverse(sort_by(y, cheight)), input_order, indomain_min),
-                     int_search(reverse(sort_by(x, cheight)), input_order, indomain_min)])
+solve :: int_search(y, first_fail, indomain_min)
+      :: int_search(x, first_fail, indomain_min)
   minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];

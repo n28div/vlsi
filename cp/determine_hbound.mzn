@@ -39,7 +39,7 @@ function int: greedy_height(int: N, % number of circuits
          greedy_height(N, W, widths, heights, row_height, height_acc, width_acc + ew, it + 1)
        endif
     else % add a new "row"
-      greedy_height(N, W, widths, heights, 0, height_acc, 0, it)
+      greedy_height(N, W, widths, heights, 0, height_acc, 0, it + 1)
     endif
   endif
 );
