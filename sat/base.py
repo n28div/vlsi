@@ -35,6 +35,7 @@ class SatModel(object):
     self.post_static_constraints()
     # create backtracking point
     self.solver.push()
+    self._solved_once = False
 
     self.solving_time = -1
     self.constraint_posting_time = -1
@@ -97,8 +98,9 @@ class SatModel(object):
     # set the current height
     self.HEIGHT = height
     
-    # backtrack to the latest available point e.g. without dynamic constraints
-    self.solver.pop()
+    if self._solved_once:
+      # previous solve call constraints needs to be removed
+      self.solver.pop()
 
     # post height constraint: forbid heights bigger than h    
     self.solver.add(z3.And([z3.Not(self.cy[c, i])
@@ -115,6 +117,8 @@ class SatModel(object):
     self.solved_time = time.perf_counter()    
     self.solver.check()
     self.solved_time = time.perf_counter() - self.solved_time
+
+    self._solved_once = True
 
   def _idxs_positions(self) -> List[Tuple[int, int]]:
     """
