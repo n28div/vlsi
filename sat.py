@@ -160,13 +160,13 @@ if __name__ == "__main__":
         data = txt2dict(i)
 
         # sort height and width by height
-        h_w = sorted(zip(data["cheight"], data["cwidth"]), reverse=True, key=lambda x: x[0])
-        sheight, swidth = zip(*h_w)
-        upper_bound = greedy_height(data["N"], data["WIDTH"], sheight, swidth)
+        sheight = sorted(data["cheight"], reverse=True)
+        swidth = [i for _, i in sorted(zip(data["cheight"], data["cwidth"]), reverse=True)]
 
-        # compute lower bound
-        lower_bound = int(sum([h * w for h, w in h_w]) / data["WIDTH"])
-        
+        upper_bound = greedy_height(data["N"], data["WIDTH"], sheight, swidth)
+        lower_bound = int(sum([h * w for h, w in zip(sheight, swidth)]) / data["WIDTH"])
+        print(f"Searching height in [{lower_bound}, {upper_bound}]")
+
         #create model new everytime so we can change parameter value
         solver = model(data["WIDTH"], data["cwidth"], data["cheight"], lower_bound, upper_bound)  
 
