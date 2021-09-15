@@ -108,7 +108,7 @@ def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
 
 if __name__ == "__main__":
   try:
-
+    sys.setrecursionlimit(3000)
     import argparse
     # define CLI arguments
     parser = argparse.ArgumentParser(description="Run minizinc vlsi solving method")
