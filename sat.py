@@ -173,7 +173,6 @@ if __name__ == "__main__":
         start_t = time.perf_counter()
         for h in range(upper_bound, lower_bound-1, -1):
           print(f"Height = {h:3} ", end=" ")
-          solver = model(data["WIDTH"], data["cwidth"], data["cheight"], lower_bound, h)
           # run model
           solver.solve(height=h)
 

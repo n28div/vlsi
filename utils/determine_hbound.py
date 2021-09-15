@@ -7,7 +7,7 @@ def greedy_height(N: int,  # number of circuits
                   row_height: int = 0,
                   height_acc: int = 0,
                   width_acc: int = 0,
-                  it: int = 0):
+                  it: int = 1):
   if (it == N):
     return height_acc  # base case, return accumulated height
   else:
