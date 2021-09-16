@@ -85,7 +85,7 @@ class NaiveModel(SatModel):
     constraints = list()
 
     for c in range(self.N):
-      for i in range(self.HEIGHT - self.cheight[c] + 1):
+      for i in range(self.HEIGHT_UB - self.cheight[c] + 1):
         for j in range(self.WIDTH - self.cwidth[c] + 1):
           constraints.append(z3.And(self.cy[c, i], self.cx[c, j])
                               ==
@@ -107,9 +107,20 @@ class NaiveModel(SatModel):
     constraints = list()
 
     for c in range(self.N):
-      for i in range(self.HEIGHT - self.cheight[c] + 1, self.HEIGHT):
-        for j in range(self.WIDTH - self.cwidth[c] + 1, self.WIDTH):
-          constraints.append(z3.Not(z3.Or(self.cy[c, i], self.cx[c, j])))
+      # circuit can be placed on a certain row only if all rows to the circuits height are allowed
+      # having enough room vertically is a necessary condition to place a circuit in a row
+      for i in range(self.HEIGHT_UB - self.cheight[c] + 1):
+        constraints.append(
+          z3.Implies(self.cy[c, i], z3.And([self.a_h[i + h] for h in range(self.cheight[c])]))
+        )
+    
+      # circuit cannot be placed on index that would bring it out of the board
+      for i in range(self.HEIGHT_UB - self.cheight[c] + 1, self.HEIGHT_UB):
+        constraints.append(z3.Not(self.cy[c, i]))
+
+      # a circuit can be placed on a certain column only if it would not go out of the circuit
+      for j in range(self.WIDTH - self.cwidth[c] + 1, self.WIDTH):
+        constraints.append(z3.Not(self.cx[c, j]))
 
     return z3.And(constraints)
 
@@ -152,22 +163,6 @@ class NaiveModel(SatModel):
 
     return z3.And(constraints)
 
-  def horizontal_symmetry(self):
-
-    constraints = list()
-    for c in range(self.N):
-      for i in range(self.WIDTH):
-        z3.Xor(self.cx[c, i], self.cx[c, self.WIDTH-self.cwidth[c] - i])
-    return z3.And(constraints)
-
-  def vertical_symmetry(self):
-
-    constraints = list()
-    for c in range(self.N):
-      for i in range(self.HEIGHT):
-        z3.Xor(self.cy[c, i], self.cy[c, self.HEIGHT-self.cheight[c] - i])
-    return z3.And(constraints)
-
   def post_static_constraints(self):
     """
     Post static constraints
@@ -175,16 +170,7 @@ class NaiveModel(SatModel):
     self.solver.add(
       self.cx_cy_leftbottom_constraint(),
       self.placement_constraint(),
-      self.overlapping_constraint()
-    )
-
-  def post_dynamic_constraints(self):
-    """
-    Post constraints on the model
-    """
-    self.solver.add(
       self.bound_constraint(),
-      self.channeling_constraint(),
-      self.horizontal_symmetry(),
-      self.vertical_symmetry(),
+      self.overlapping_constraint(),
+      self.channeling_constraint()
     )

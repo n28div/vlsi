@@ -30,15 +30,13 @@ class SatModel(object):
     
     # build the board representation
     self.setup()
-
     self.solver = z3.Solver()
-    self.post_static_constraints()
-    # create backtracking point
-    self.solver.push()
-    self._solved_once = False
 
-    self.solving_time = -1
-    self.constraint_posting_time = -1
+    self.init_time = time.perf_counter()
+    self.post_static_constraints()
+    self.init_time = time.perf_counter() - self.init_time
+
+    self.solved_time = -1
 
   def setup(self):
     """
@@ -55,6 +53,8 @@ class SatModel(object):
     self.cx = np.array([[z3.Bool(f"cx_{c}_{j}") for j in range(self.WIDTH)] for c in range(self.N)])
     # cy
     self.cy = np.array([[z3.Bool(f"cy_{c}_{i}") for i in range(self.HEIGHT_UB)] for c in range(self.N)])
+    # allowed_height
+    self.a_h = np.array([z3.Bool(f"a_{i}") for i in range(self.HEIGHT_UB)])
 
   def post_static_constraints(self):
     """
@@ -66,16 +66,6 @@ class SatModel(object):
     """
     raise NotImplementedError
   
-  def post_dynamic_constraints(self):
-    """
-    Method used to post dynamic constraints on the model 
-    e.g. those contraints that do depend on the height that is being tried
-    
-    Raises:
-        NotImplementedError: If not overriden raises not implemented error
-    """
-    raise NotImplementedError
-
   @property
   def solved(self) -> bool:
     """
@@ -97,28 +87,16 @@ class SatModel(object):
     """
     # set the current height
     self.HEIGHT = height
-    
-    if self._solved_once:
-      # previous solve call constraints needs to be removed
-      self.solver.pop()
-
-    # post height constraint: forbid heights bigger than h    
-    self.solver.add(z3.And([z3.Not(self.cy[c, i])
-                            for c in range(self.N)
-                            for i in range(self.HEIGHT, self.HEIGHT_UB)]))
 
     # post dynamic constraints
-    self.constraint_posting_time = time.perf_counter()
-    self.post_dynamic_constraints()
-    self.constraint_posting_time = time.perf_counter() - self.constraint_posting_time
-    self.solver.push()
+    if height < self.HEIGHT_UB:
+      # a_h is 0-indexed so this is actually removing previous height from being used
+      self.solver.add(z3.Not(self.a_h[height]))
 
     # search for a solution
-    self.solved_time = time.perf_counter()    
+    self.solved_time = time.perf_counter()
     self.solver.check()
     self.solved_time = time.perf_counter() - self.solved_time
-
-    self._solved_once = True
 
   def _idxs_positions(self) -> List[Tuple[int, int]]:
     """
@@ -161,6 +139,6 @@ class SatModel(object):
       Dict: Time taken to solve the instance, split into constraint posting and actual solving
     """
     return {
-      "constraint": self.constraint_posting_time,
+      "init": self.init_time,
       "solve": self.solved_time
     }
