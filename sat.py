@@ -157,6 +157,7 @@ if __name__ == "__main__":
 
         best_x = []
         best_y = []
+        best_h = None
         data = txt2dict(i)
 
         # sort height and width by height
@@ -177,17 +178,19 @@ if __name__ == "__main__":
           # run model
           solver.solve(height=h)
 
-          print(f"actual solving: {solver.time['solve']:04f}s]")
+          print(f"[solving: {solver.time['solve']:04f}s setup: {solver.time['setup']:04f}s]")
 
           if solver.solved:
+            best_h = h
             best_x = solver.x
             best_y = solver.y
           else:
             break
         end_t = time.perf_counter()
 
-        print(f"Solved with h={h} in {end_t - start_t:04f} seconds")
-        plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot)
+        if best_h is not None:
+          print(f"Solved with h={best_h} in {end_t - start_t:04f} seconds")
+          plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot)
         
         #show report results
         #res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)

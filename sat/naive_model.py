@@ -66,6 +66,19 @@ class NaiveModel(SatModel):
     """
     return z3.And(self._at_least_n(vars, n), self._at_most_n(list(vars), n))
 
+  def allowed_height_constraint(self):
+    """
+    Ensure no placement outside of max height
+    """
+    constraints = list()
+
+    for c in range(self.N):
+      for i in range(self.HEIGHT_UB):
+        constraints.append(z3.Implies(self.cy[c][i], self.a_h[i]))
+
+    return z3.And(constraints)
+
+
   def cx_cy_leftbottom_constraint(self) -> z3.BoolRef:
     """
     Ensure that only one bottom left index is set
@@ -168,6 +181,7 @@ class NaiveModel(SatModel):
     Post static constraints
     """
     self.solver.add(
+      self.allowed_height_constraint(),
       self.cx_cy_leftbottom_constraint(),
       self.placement_constraint(),
       self.bound_constraint(),

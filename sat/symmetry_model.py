@@ -5,11 +5,22 @@ from .naive_model import NaiveModel
 from itertools import chain, combinations
 from typing import List
 
+def z3_bEq(a: z3.BoolRef, b: z3.BoolRef) -> z3.BoolRef:
+  """
+  Boolean equality
+  """
+  return a == b
+
+def z3_bLe(a: z3.BoolRef, b: z3.BoolRef) -> z3.BoolRef:
+  """
+  Implement when a boolean is less or equal than another one
+  """
+  return z3.Implies(a, b)
+  
 class SymmetryModel(NaiveModel):
   """
   Symmetry breaking model implementation
   """
-  
   def _lex_lesseq(self, a, b) -> z3.BoolRef:
     """
     Less eq constraint implementation:
@@ -21,24 +32,36 @@ class SymmetryModel(NaiveModel):
     inspired by https://stackoverflow.com/questions/68557254/z3py-symmetry-breaking-constraint-by-lexicographic-order
     """
     # base case: we arrived at the end of both list, they should be ordered otherwise we would have ended before
-    if len(a) == 0:
-      return True
-    else:
-      return z3.Or(z3.And(z3.Not(a[0]), b[0]), self._lex_lesseq(a[1:], b[1:]))
+    constraints = list()
 
-  def symmetry_breaking_constraint(self):
+    constraints.append(
+        z3.Or(z3_bLe(a[0], b[0]), z3.And(z3_bLe(a[0], b[0]), z3_bLe(a[1], b[1])))
+    )
+    for i in range(1, len(a) - 1):
+      # (a[i] == b[i]) -> (a[i + 1] <= b[i + 1])
+      constraints.append(
+        z3.Or(
+          z3_bLe(a[i], b[i]),
+          z3.Implies(
+            z3.And([z3_bEq(a[j], b[j]) for j in range(0, i)]), 
+            z3_bLe(a[i + 1], b[i + 1])
+          )
+        )
+      )
+    
+    return z3.And(constraints)
+
+  def symmetry_breaking(self):
     constraints = list()
 
     for c in range(self.N):
-      flattened = [self.cboard[c][i][j] for i in range(self.HEIGHT_UB) for j in range(self.WIDTH)]
-      hor_symm = [self.cboard[c][i][j] for i in range(self.HEIGHT_UB) for j in reversed(range(self.WIDTH))]
-      ver_symm = [self.cboard[c][i][j] for i in reversed(range(self.HEIGHT_UB)) for j in range(self.WIDTH)]
-      hor_ver_symm = [self.cboard[c][i][j] for i in reversed(range(self.HEIGHT_UB)) for j in reversed(range(self.WIDTH))]
-
-      constraints.append(self._lex_lesseq(flattened, hor_symm))
-      constraints.append(self._lex_lesseq(flattened, ver_symm))
-      constraints.append(self._lex_lesseq(flattened, hor_ver_symm))
-    
+      flat = [self.cboard[c][i][j] for j in range(self.WIDTH) for i in range(self.HEIGHT_UB)]
+      hor_flat = [self.cboard[c][i][j] for j in reversed(range(self.WIDTH)) for i in range(self.HEIGHT_UB)]
+      #ver_flat = [self.cboard[c][i][j] for j in range(self.WIDTH) for i in reversed(range(self.HEIGHT))]
+      
+      constraints.append(self._lex_lesseq(flat, hor_flat))
+      #constraints.append(self._lex_lesseq(flat, hor_flat))  
+  
     return z3.And(constraints)
 
   def post_static_constraints(self):
@@ -46,4 +69,4 @@ class SymmetryModel(NaiveModel):
     Post constraints on the model
     """
     super().post_static_constraints()
-    self.solver.add(self.symmetry_breaking_constraint())
+    self.solver.add(self.symmetry_breaking())
