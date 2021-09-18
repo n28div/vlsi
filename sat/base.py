@@ -58,17 +58,6 @@ class SatModel(object):
     # allowed_height
     self.a_h = np.array([z3.Bool(f"a_{i}") for i in range(self.HEIGHT_UB)])
 
-  def post_dynamic_constraints(self):
-    """
-    Method used to post static dynamic on the model 
-    e.g. those contraints that do depend on the height that is being tried
-    
-    Raises:
-        NotImplementedError: If not overriden raises not implemented error
-    """
-    pass
-  
-
   def post_static_constraints(self):
     """
     Method used to post static constraints on the model 
@@ -103,10 +92,6 @@ class SatModel(object):
     # set the current height
     self.HEIGHT = height
 
-    # check if model has been solved once
-    #if self._solved_once:
-    #  self.solver.pop()
-
     # post dynamic constraints
     self.setup_time = time.perf_counter()
 
@@ -114,8 +99,6 @@ class SatModel(object):
       # a_h is 0-indexed so this is actually removing previous height from being used
       self.solver.add(z3.Not(self.a_h[height]))
     
-    #self.solver.push()
-    self.post_dynamic_constraints()
     self.setup_time = time.perf_counter() - self.setup_time
 
     # search for a solution
