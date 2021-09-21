@@ -21,7 +21,8 @@ class SatModel(object):
         ub (int): Height upper bound
     """    
     self.N = len(cwidth)
-    self.WIDTH = width
+    self.WIDTH = z3.Int('WIDTH')
+
     self.cwidth = cwidth
     self.cheight = cheight
     
@@ -32,7 +33,7 @@ class SatModel(object):
     self.setup()
     self.solver = z3.Solver()
     self._solved_once = False
-
+    self.solver.add(self.WIDTH == width)
     self.init_time = time.perf_counter()
     self.post_static_constraints()
     self.init_time = time.perf_counter() - self.init_time
@@ -49,14 +50,16 @@ class SatModel(object):
 
     Board is built as high as upper bounds goes so that it can be reused.
     """
-    # build cboard
-    self.cboard = np.array([[[z3.Bool(f"cb_{c}_{i}_{j}") for j in range(self.WIDTH)] for i in range(self.HEIGHT_UB)] for c in range(self.N)])
+
     # cx
-    self.cx = np.array([[z3.Bool(f"cx_{c}_{j}") for j in range(self.WIDTH)] for c in range(self.N)])
+    self.cx = z3.IntVector('x', self.N)
     # cy
-    self.cy = np.array([[z3.Bool(f"cy_{c}_{i}") for i in range(self.HEIGHT_UB)] for c in range(self.N)])
+    self.cy = z3.IntVector('y', self.N)
     # allowed_height
     self.a_h = np.array([z3.Bool(f"a_{i}") for i in range(self.HEIGHT_UB)])
+
+    self.HEIGHT = z3.Int('HEIGHT')
+
 
   def post_static_constraints(self):
     """
@@ -90,14 +93,11 @@ class SatModel(object):
     # setup time is time spent setting up before actually solving
     self.setup_time = 0
     # set the current height
-    self.HEIGHT = height
+
+    self.solver.add(self.HEIGHT <= height)
 
     # post dynamic constraints
     self.setup_time = time.perf_counter()
-
-    if height < self.HEIGHT_UB:
-      # a_h is 0-indexed so this is actually removing previous height from being used
-      self.solver.add(z3.Not(self.a_h[height]))
     
     self.setup_time = time.perf_counter() - self.setup_time
 
