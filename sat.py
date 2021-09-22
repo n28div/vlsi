@@ -173,17 +173,18 @@ if __name__ == "__main__":
         print(f"Built encoding and constraints in: {solver.time['init']:04f}s")
 
         start_t = time.perf_counter()
-        for h in range(lower_bound+1, upper_bound):
+        for h in range(lower_bound, upper_bound):
           print(f"Height = {h:3} ", end=" ")
           # run model
           solver.solve(height=h)
 
           print(f"[solving: {solver.time['solve']:04f}s setup: {solver.time['setup']:04f}s]")
 
-          if solver.solved :
+          if solver.solved:
             best_h = h
             best_x = solver.x
             best_y = solver.y
+            print(solver.y)
             break
 
 

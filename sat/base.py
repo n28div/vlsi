@@ -32,6 +32,7 @@ class SatModel(object):
     self.setup()
     self.solver = z3.Solver()
     self._solved_once = False
+    self._solved = False
 
     self.init_time = time.perf_counter()
     self.post_static_constraints()
@@ -74,11 +75,7 @@ class SatModel(object):
     Returns:
         bool: instance has been solved or not
     """
-    try:
-      self.solver.model()
-      return True
-    except:
-      return False
+    return self._solved
 
   def solve(self, height: int):
     """
@@ -103,7 +100,7 @@ class SatModel(object):
 
     # search for a solution
     self.solved_time = time.perf_counter()
-    self.solver.check()
+    self._solved = self.solver.check() == z3.sat
     self.solved_time = time.perf_counter() - self.solved_time
     
     self._solved_once = True
