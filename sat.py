@@ -174,19 +174,15 @@ if __name__ == "__main__":
 
         start_t = time.perf_counter()
         for h in range(lower_bound, upper_bound):
-          print(f"Height = {h:3} ", end=" ")
           # run model
           solver.solve(height=h)
-
-          print(f"[solving: {solver.time['solve']:04f}s setup: {solver.time['setup']:04f}s]")
-
+          print(f"{'SAT' if solver.solved else 'UNSAT'}\tHeight = {h:3} [solving: {solver.time['solve']:04f}s setup: {solver.time['setup']:04f}s]")
+            
           if solver.solved:
             best_h = h
             best_x = solver.x
             best_y = solver.y
-            print(solver.y)
             break
-
 
         end_t = time.perf_counter()
 

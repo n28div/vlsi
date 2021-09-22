@@ -68,7 +68,7 @@ class SatModel(object):
         NotImplementedError: If not overriden raises not implemented error
     """
     pass
-  
+
   @property
   def solved(self) -> bool:
     """
@@ -91,16 +91,18 @@ class SatModel(object):
 
     # post dynamic constraints
     self.setup_time = time.perf_counter()
-
-    if height < self.HEIGHT_UB:
-      # a_h is 0-indexed so this is actually removing previous height from being used
-      self.solver.add(z3.Not(self.a_h[height]))
+    allowed_height = z3.And([self.a_h[h] for h in range(height)])
+    not_allowed_height = z3.Not(z3.Or([self.a_h[h] for h in range(height, self.HEIGHT_UB)]))
     
+    pre_requisites = [allowed_height]
+    if height < self.HEIGHT_UB:
+      pre_requisites.append(not_allowed_height)
+
     self.setup_time = time.perf_counter() - self.setup_time
 
     # search for a solution
     self.solved_time = time.perf_counter()
-    self._solved = self.solver.check() == z3.sat
+    self._solved = self.solver.check(*pre_requisites) == z3.sat
     self.solved_time = time.perf_counter() - self.solved_time
     
     self._solved_once = True
