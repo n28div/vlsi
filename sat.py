@@ -1,5 +1,5 @@
 from z3.z3 import Select
-from sat import NaiveModel, SymmetryModel
+from sat import NaiveModel, SymmetryModel, MaybeSymmetryModel
 from typing import Dict, Union, List
 from glob import glob
 from utils.plot import plot_vlsi, plot_multi_vlsi
