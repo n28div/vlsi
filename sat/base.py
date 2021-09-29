@@ -109,6 +109,7 @@ class SatModel(object):
     # search for a solution
     self.solved_time = time.perf_counter()
     self.solver.add(self.HEIGHT <= height)
+    self.solver.set("timeout", 290000)
     issat = self.solver.check()
     print(issat)
     self.solved_time = time.perf_counter() - self.solved_time
