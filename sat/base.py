@@ -30,8 +30,10 @@ class SatModel(object):
     self.HEIGHT_UB = ub
     
     # build the board representation
+    self.solver = z3.Tactic("smt").solver()
     self.setup()
-    self.solver = z3.Solver()
+
+    self.solver.set("timeout", 300)
     self._solved_once = False
     self.solver.add(self.WIDTH == width)
     self.init_time = time.perf_counter()
@@ -52,11 +54,17 @@ class SatModel(object):
     """
 
     # cx
-    self.cx = z3.IntVector('x', self.N)
+    #self.cx = z3.IntVector('x', self.N)
+    self.cx = np.array([z3.Int(f"cx_{i}") for i in range(self.N)])
     # cy
-    self.cy = z3.IntVector('y', self.N)
-    # allowed_height
-    self.a_h = np.array([z3.Bool(f"a_{i}") for i in range(self.HEIGHT_UB)])
+    #self.cy = z3.IntVector('y', self.N)
+    self.cy = [z3.Int(f"cy_{i}") for i in range(self.N)]
+
+    #self.cwidth = [z3.Int(f"cx_{i}") for i in range(self.N)]
+    #self.cheight = [z3.Int(f"cy_{i}") for i in range(self.N)]
+    #for i in range(self.N):
+    #  self.solver.add(self.cwidth[i] == self.cwidth_z3[i])
+    #  self.solver.add(self.cheight[i] == self.cheight_z3[i])
 
     self.HEIGHT = z3.Int('HEIGHT')
 
@@ -94,8 +102,6 @@ class SatModel(object):
     self.setup_time = 0
     # set the current height
 
-    self.solver.add(self.HEIGHT <= height)
-
     # post dynamic constraints
     self.setup_time = time.perf_counter()
     
@@ -103,7 +109,9 @@ class SatModel(object):
 
     # search for a solution
     self.solved_time = time.perf_counter()
-    self.solver.check()
+    self.solver.add(self.HEIGHT <= height)
+    issat = self.solver.check()
+    print(issat)
     self.solved_time = time.perf_counter() - self.solved_time
     
     self._solved_once = True

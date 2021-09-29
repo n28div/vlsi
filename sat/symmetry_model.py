@@ -5,17 +5,17 @@ from .naive_model import NaiveModel
 from itertools import chain, combinations
 from typing import List
 
-def z3_bEq(a: z3.BoolRef, b: z3.BoolRef) -> z3.BoolRef:
+def z3_bEq(a, b):
   """
   Boolean equality
   """
   return a == b
 
-def z3_bLe(a: z3.BoolRef, b: z3.BoolRef) -> z3.BoolRef:
+def z3_bLe(a, b):
   """
   Implement when a boolean is less or equal than another one
   """
-  return z3.Implies(a, b)
+  return a <= b
   
 class SymmetryModel(NaiveModel):
   """
@@ -23,19 +23,27 @@ class SymmetryModel(NaiveModel):
   """
   def setup(self):
     super().setup()
-    # build iboard
-    self.iboard = np.array([[z3.Bool(f"cb_{i}_{j}") for j in range(self.WIDTH)] for i in range(self.HEIGHT_UB)])
-    
-  def iboard_channeling_constraint(self) -> z3.BoolRef:
-    """
-    Only channel if position is in bound
-    """
+    # build flatpos
+    self.flatpos = z3.IntVector("flatpos", self.N)
+    self.flatpos_hor = z3.IntVector("flatpos_hor", self.N)
+    self.flatpos_ver = z3.IntVector("flatpos_ver", self.N)
+    self.flatpos_hor_ver = z3.IntVector("flatpos_hor_ver", self.N)
+
+
+  def flatten_position(self, i, j):
+      return i*self.WIDTH+j
+
+
+  def channel_flatpos(self):
+
     constraints = list()
 
-    for i in range(self.HEIGHT_UB):
-      for j in range(self.WIDTH):
-        constraints.append(z3.Or([self.cboard[c][i][j] for c in range(self.N)]) == self.iboard[i][j])
-
+    for i in range(self.N):
+      constraints.append(self.flatpos[i] == self.flatten_position(self.cy[i], self.cx[i]))
+      constraints.append(self.flatpos_hor[i] == self.flatten_position(self.cy[i], self.WIDTH - self.cwidth[i]-self.cx[i]))
+      constraints.append(self.flatpos_ver[i] == self.flatten_position(self.HEIGHT - self.cheight[i] - self.cy[i], self.cx[i]))
+      constraints.append(self.flatpos_hor_ver[i] == self.flatten_position(self.HEIGHT - self.cheight[i] - self.cy[i],
+                                                                          self.WIDTH-self.cwidth[i]-self.cx[i]))
     return z3.And(constraints)
 
 
@@ -59,17 +67,11 @@ class SymmetryModel(NaiveModel):
     
     return z3.And(constraints)
 
+
   def symmetry_breaking(self):
+
     constraints = list()
-
-    flat = [self.iboard[i][j] for i in range(self.HEIGHT_UB) for j in range(self.WIDTH)]
-    hor_flat = [self.iboard[i][j] for i in range(self.HEIGHT_UB) for j in reversed(range(self.WIDTH))]
-    ver_flat = [self.iboard[i][j] for i in reversed(range(self.HEIGHT_UB)) for j in range(self.WIDTH)]
-    hor_ver_flat = [self.iboard[i][j] for i in reversed(range(self.HEIGHT_UB)) for j in reversed(range(self.WIDTH))]
-
-    constraints.append(self._lex_lesseq(flat, hor_flat))
-    constraints.append(self._lex_lesseq(flat, ver_flat))
-    constraints.append(self._lex_lesseq(flat, hor_ver_flat))    
+    constraints.append(self._lex_lesseq(self.flatpos, self.flatpos_hor))
 
     return z3.And(constraints)
 
@@ -79,6 +81,6 @@ class SymmetryModel(NaiveModel):
     """
     super().post_static_constraints()
     self.solver.add(
-      self.iboard_channeling_constraint(),
+      self.channel_flatpos(),
       self.symmetry_breaking()
     )
