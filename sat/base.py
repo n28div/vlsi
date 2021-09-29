@@ -10,7 +10,7 @@ class SatModel(object):
   Sat model implementing some common logic between solvers such as input interface, output interface etc.
   """
 
-  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int):
+  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int, timeout=None):
     """Initialize solver and attributes
 
     Args:
@@ -30,6 +30,9 @@ class SatModel(object):
     
     # build the board representation
     self.setup()
+
+    self.remaining_time = timeout
+
     self.solver = z3.Solver()
     self._solved_once = False
     self._solved = False
@@ -100,11 +103,15 @@ class SatModel(object):
 
     self.setup_time = time.perf_counter() - self.setup_time
 
-    # search for a solution
+    # search for a solution in remaining time (must be provided in ms)
+    self.solver.set("timeout", int(self.remaining_time * 1000))
+
     self.solved_time = time.perf_counter()
     self._solved = self.solver.check(*pre_requisites) == z3.sat
     self.solved_time = time.perf_counter() - self.solved_time
     
+    self.remaining_time -= self.solved_time
+
     self._solved_once = True
 
   def _idxs_positions(self) -> List[Tuple[int, int]]:
