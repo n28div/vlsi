@@ -1,12 +1,12 @@
 import typing
 import z3
 import numpy as np
-from .base import SatModel
+from .base import SmtModel
 from itertools import chain, combinations
 from typing import List
 
 
-class NaiveModel(SatModel):
+class NaiveModel(SmtModel):
     """
   Naive model implementation
 

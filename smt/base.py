@@ -5,7 +5,7 @@ from z3.z3 import Int, Not
 import time
 import numpy as np
 
-class SatModel(object):
+class SmtModel(object):
   """
   Sat model implementing some common logic between solvers such as input interface, output interface etc.
   """
