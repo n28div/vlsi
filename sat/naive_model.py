@@ -52,20 +52,20 @@ class NaiveModel(SatModel):
 
     def overlapping_constraint(self) -> z3.BoolRef:
         """
-    Overlapping constraint between two circuits. Only one circuit can be at index (i,j).
+        Overlapping constraint between two circuits. Only one circuit can be at index (i,j).
 
-    Args:
-        c (int): Circuit of boolean
-        i (int): Row of boolean
-        j (int): Column of boolean
-    Returns:
-        z3.BoolRef: Constraint to be placed on solver
-    """
+        Args:
+            c (int): Circuit of boolean
+            i (int): Row of boolean
+            j (int): Column of boolean
+        Returns:
+            z3.BoolRef: Constraint to be placed on solver
+        """
 
         constraints = list()
         for i in range(self.N):
             for j in range(self.N):
-                if i != j:
+                if i < j:
                     constraints.append(
                         z3.Or(
                             self.cx[i] + self.cwidth[i] <= self.cx[j],
@@ -79,8 +79,8 @@ class NaiveModel(SatModel):
 
     def post_static_constraints(self):
         """
-    Post static constraints
-    """
+        Post static constraints
+        """
         self.solver.add(
             self.allowed_height_constraint(),
             self.allowed_width_constraint(),

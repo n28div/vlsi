@@ -190,7 +190,6 @@ if __name__ == "__main__":
                 end_t = time.perf_counter()
 
                 if best_h is not None:
-                    print(best_x, best_y)
                     print(f"Solved with h={best_h} in {end_t - start_t:04f} seconds")
                     plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot)
 

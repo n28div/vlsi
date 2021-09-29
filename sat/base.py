@@ -21,7 +21,7 @@ class SatModel(object):
         ub (int): Height upper bound
     """    
     self.N = len(cwidth)
-    self.WIDTH = z3.Int('WIDTH')
+    self.WIDTH = width
 
     self.cwidth = cwidth
     self.cheight = cheight
@@ -30,12 +30,11 @@ class SatModel(object):
     self.HEIGHT_UB = ub
     
     # build the board representation
-    self.solver = z3.Tactic("smt").solver()
     self.setup()
+    self.solver = z3.Solver()
 
-    self.solver.set("timeout", 300)
+    #self.solver.set("timeout", 300)
     self._solved_once = False
-    self.solver.add(self.WIDTH == width)
     self.init_time = time.perf_counter()
     self.post_static_constraints()
     self.init_time = time.perf_counter() - self.init_time
