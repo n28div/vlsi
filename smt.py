@@ -1,5 +1,7 @@
 from z3.z3 import Select
-from sat import NaiveModel
+
+from smt import NaiveModel, SymmetryModel
+
 from typing import Dict, Union, List
 from glob import glob
 from utils.plot import plot_vlsi, plot_multi_vlsi
@@ -19,7 +21,9 @@ def enumerate_models() -> List[str]:
 
     Returns: List[str]: List of implemented models, sorted by number
     """
-    return natsorted(glob("cp/*.mzn"))
+
+    return [NaiveModel, SymmetryModel]
+
 
 
 def enumerate_instances() -> List[str]:
@@ -109,17 +113,23 @@ def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
 if __name__ == "__main__":
     try:
 
+        sys.setrecursionlimit(3000)
+
         import argparse
 
         # define CLI arguments
         parser = argparse.ArgumentParser(description="Run minizinc vlsi solving method")
-        # parser.add_argument("--models", "-m", nargs="*", type=str,
-        #                    required=True, help="Model(s) to use. Leave empty to use all.")
+
+        parser.add_argument("--models", "-m", nargs="*", type=str,
+                            required=True, help="Model(s) to use. Leave empty to use all.")
+
         parser.add_argument("--instances", "-i", nargs="*", type=str,
                             required=True, help="Instances(s) to load. Leave empty to use all.")
         # parser.add_argument("--wandb", "-wandb", action="store_true", help="Log data using wandb.")
         # parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
-        # parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
+
+        parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
+
         # parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
         # parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
         #                    help="Execution time contraint in seconds. Defaults to 300s (5m).")
@@ -127,8 +137,10 @@ if __name__ == "__main__":
         # parse CLI arguments
         args = parser.parse_args()
         # use specified models or use all models if left empty
-        # models = args.models if len(args.models) > 0 else enumerate_models()
-        models = [NaiveModel]
+
+        models = args.models if len(args.models) > 0 else enumerate_models()
+        models = [eval(m) for m in models]
+
         # load specified instances or load all instances if left empty
         instances = args.instances if len(args.instances) > 0 else enumerate_instances()
 
@@ -158,52 +170,44 @@ if __name__ == "__main__":
 
                 best_x = []
                 best_y = []
-                solving = True
+
+                best_h = None
                 data = txt2dict(i)
 
-                h_array = np.array(data["cheight"])
-                w_array = np.array(data["cwidth"])
-                idx = np.argsort(h_array)
+                # sort height and width by height
+                sheight = sorted(data["cheight"], reverse=True)
+                swidth = [i for _, i in sorted(zip(data["cheight"], data["cwidth"]), reverse=True)]
 
-                h_array = np.array(h_array)[idx]
-                w_array = np.array(w_array)[idx]
-                lower_bound = int(np.dot(h_array, w_array) / data["WIDTH"])
-                h_sorted = h_array.tolist()
-                w_sorted = w_array.tolist()
+                upper_bound = greedy_height(data["N"], data["WIDTH"], sheight, swidth)
+                lower_bound = int(sum([h * w for h, w in zip(sheight, swidth)]) / data["WIDTH"])
+                print(f"Searching height in [{lower_bound}, {upper_bound}]")
 
-                w_sorted.reverse()
-                h_sorted.reverse()
-                upper_bound = greedy_height(data["N"], data["WIDTH"], w_sorted, h_sorted, 0, 0, 0, 1)
-                solving_start = time.perf_counter()
+                # create model new everytime so we can change parameter value
+                solver = model(data["WIDTH"], data["cwidth"], data["cheight"], lower_bound, upper_bound)
+                print(f"Built encoding and constraints in: {solver.time['init']:04f}s")
 
+                start_t = time.perf_counter()
                 for h in range(upper_bound, lower_bound - 1, -1):
-                    # create model new everytime so we can change parameter value
-                    solver = model(data["WIDTH"], data["cwidth"], data["cheight"])
+                    print(f"Height = {h:3} ", end=" ")
                     # run model
                     solver.solve(height=h)
+
+                    print(f"[solving: {solver.time['solve']:04f}s setup: {solver.time['setup']:04f}s]")
+
                     if solver.solved:
+                        best_h = h
+
                         best_x = solver.x
                         best_y = solver.y
                     else:
                         break
 
-                solving_end = time.perf_counter()
-                print(f"Solving took {solving_end - solving_start:04f} seconds")
-                plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=True)
-                # print(solver.positions)
-                # pprint([[solver.model.evaluate(solver.board[i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
+                end_t = time.perf_counter()
 
-                # print(solver.positions)
-                # print(solver.solver.statistics())
-                import pprint
+                if best_h is not None:
+                    print(f"Solved with h={best_h} in {end_t - start_t:04f} seconds")
+                    plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot)
 
-                for c in range(solver.N):
-                    print("Circuit ", c)
-                    # pprint([[solver.model.evaluate(solver.iboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-                    # pprint.pprint([[solver.solver.model().evaluate(solver.cboard[c][i][j]) for j in range(solver.WIDTH)] for i in range(solver.HEIGHT)])
-                    # pprint.pprint([solver.solver.model().evaluate(solver.cy[c][i]) for i in range(solver.HEIGHT)])
-                    # pprint.pprint([solver.solver.model().evaluate(solver.cx[c][j]) for j in range(solver.WIDTH)])
-                    # print(solver.result.evaluate(solver.board))
 
                 # show report results
                 # res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
