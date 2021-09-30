@@ -95,7 +95,7 @@ class SatModel(object):
     # post dynamic constraints
     self.setup_time = time.perf_counter()
     allowed_height = z3.And([self.a_h[h] for h in range(height)])
-    not_allowed_height = z3.Not(z3.Or([self.a_h[h] for h in range(height, self.HEIGHT_UB - 1)]))
+    not_allowed_height = z3.Not(z3.Or([self.a_h[h] for h in range(height, self.HEIGHT_UB)]))
     
     pre_requisites = [allowed_height]
     if height < self.HEIGHT_UB:

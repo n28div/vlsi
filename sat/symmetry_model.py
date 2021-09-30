@@ -34,19 +34,18 @@ class SymmetryModel(NaiveModel):
 
     for i in range(self.HEIGHT_UB):
       for j in range(self.WIDTH):
-        constraints.append(self.iboard[i, j] == z3.And(z3.Or(list(self.cx[:, j])), z3.Or(list(self.cy[:, i]))))
+        constraints.append(self.iboard[i, j] == z3.Or(
+          [z3.And(self.cy[e][i], self.cx[e][j]) for e in range(self.N)]
+        ))
         
     return z3.And(constraints)
-
-
+    
   def _lex_lesseq(self, a, b) -> z3.BoolRef:
     """
     Less eq constraint implementation
     from https://digitalcommons.iwu.edu/cgi/viewcontent.cgi?article=1022&context=cs_honproj
     """
-    # base case: we arrived at the end of both list, they should be ordered otherwise we would have ended before
     constraints = list()
-
     constraints.append(z3_bLe(a[0], b[0]))
     
     for i in range(len(a) - 1):
@@ -59,17 +58,22 @@ class SymmetryModel(NaiveModel):
     
     return z3.And(constraints)
 
-  def symmetry_breaking(self):
-    constraints = list()
-
+  def horizontal_symmetry_breaking(self):
     flat = [self.iboard[i][j] for i in range(self.HEIGHT_UB) for j in range(self.WIDTH)]
     hor_flat = [self.iboard[i][j] for i in range(self.HEIGHT_UB) for j in reversed(range(self.WIDTH))]
-    ver_flat = [self.iboard[i][j] for i in reversed(range(self.HEIGHT_UB)) for j in range(self.WIDTH)]
-    hor_ver_flat = [self.iboard[i][j] for i in reversed(range(self.HEIGHT_UB)) for j in reversed(range(self.WIDTH))]
+    return self._lex_lesseq(flat, hor_flat)
 
-    constraints.append(self._lex_lesseq(flat, hor_flat))
-    constraints.append(self._lex_lesseq(flat, ver_flat))
-    constraints.append(self._lex_lesseq(flat, hor_ver_flat))    
+  def vertical_symmetry_breaking(self):
+    constraints = list()
+
+    for h in range(self.HEIGHT_LB, self.HEIGHT_UB - 1):
+      # if h is not allowed then all heights after that are not allowed
+      # this means that symmetries needs to be broken up to height h-1
+      flat = [self.iboard[i][j] for i in range(h) for j in range(self.WIDTH)]
+      ver_flat = [self.iboard[i][j] for i in reversed(range(h)) for j in range(self.WIDTH)]
+      last_allowed = z3.And(self.a_h[h], z3.Not(self.a_h[h + 1]))
+      
+      constraints.append(z3.Implies(last_allowed, self._lex_lesseq(flat, ver_flat)))
 
     return z3.And(constraints)
 
@@ -80,5 +84,6 @@ class SymmetryModel(NaiveModel):
     super().post_static_constraints()
     self.solver.add(
       self.iboard_channeling_constraint(),
-      self.symmetry_breaking()
+      self.horizontal_symmetry_breaking(),
+      #self.vertical_symmetry_breaking()
     )
