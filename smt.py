@@ -153,9 +153,9 @@ if __name__ == "__main__":
                 csv_writer = csv.writer(f)
                 csv_writer.writerow(["instance nr", "time", "build_time", "x", "y"])
 
-            
             # counter for custom step
             for i in instances:
+
                 print("%s %s %s %s %s" % ("-" * 5, model, "-" * 3, i, "-" * 5))
 
                 best_x = []
@@ -163,12 +163,12 @@ if __name__ == "__main__":
 
                 best_h = None
                 data = txt2dict(i)
-
+                print(data)
                 # sort height and width by height
                 sheight = sorted(data["cheight"], reverse=True)
                 swidth = [i for _, i in sorted(zip(data["cheight"], data["cwidth"]), reverse=True)]
 
-                upper_bound = greedy_height(data["N"], data["WIDTH"], sheight, swidth)
+                upper_bound = greedy_height(data["N"], data["WIDTH"], swidth, sheight)
                 lower_bound = int(sum([h * w for h, w in zip(sheight, swidth)]) / data["WIDTH"])
                 print(f"Searching height in [{lower_bound}, {upper_bound}]")
 
@@ -178,8 +178,10 @@ if __name__ == "__main__":
 
                 start_t = time.perf_counter()
                 for h in range(upper_bound, lower_bound - 1, -1):
+
                     print(f"Height = {h:3} ", end=" ")
                     # run model
+
                     solver.solve(height=h)
                     print(f"[solving: {solver.time['solve']:04f}s setup: {solver.time['setup']:04f}s]")
 
