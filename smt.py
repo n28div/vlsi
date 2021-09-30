@@ -125,8 +125,7 @@ if __name__ == "__main__":
 
         parser.add_argument("--instances", "-i", nargs="*", type=str,
                             required=True, help="Instances(s) to load. Leave empty to use all.")
-        # parser.add_argument("--wandb", "-wandb", action="store_true", help="Log data using wandb.")
-        # parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
+        parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
 
         parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
 
@@ -146,25 +145,16 @@ if __name__ == "__main__":
 
         # execute each model
         for model in models:
-            # if args.csv is not None:
-            #  if not os.path.exists(args.csv[0]):
-            #    os.mkdir(args.csv[0])
+            if args.csv is not None:
+                if not os.path.exists(args.csv[0]):
+                    os.mkdir(args.csv[0])
+                
+                f = open(os.path.join(args.csv[0], model.__name__ + ".csv"), "w")
+                csv_writer = csv.writer(f)
+                csv_writer.writerow(["instance nr", "time", "build_time", "x", "y"])
 
-            #  f = open(os.path.join(args.csv[0], os.path.basename(m) + ".csv"), "w")
-            #  csv_writer = csv.writer(f)
-            #  csv_writer.writerow(["instance nr", "time", "solutions", "nodes", "failures"])
-
-            # if args.wandb:
-            #  run = wandb.init(project='vlsi', entity='fatlads', tags=[m])
-            #  run.name = m
-            #  #custom x-axis
-            #  wandb.define_metric("instance number")
-            #  #set variables for which this metric holds
-            #  wandb.define_metric("*", step_metric='instance number')
-            #  config = wandb.config
-
+            
             # counter for custom step
-            instance_num = 1
             for i in instances:
                 print("%s %s %s %s %s" % ("-" * 5, model, "-" * 3, i, "-" * 5))
 
@@ -191,7 +181,6 @@ if __name__ == "__main__":
                     print(f"Height = {h:3} ", end=" ")
                     # run model
                     solver.solve(height=h)
-
                     print(f"[solving: {solver.time['solve']:04f}s setup: {solver.time['setup']:04f}s]")
 
                     if solver.solved:
@@ -205,40 +194,16 @@ if __name__ == "__main__":
                 end_t = time.perf_counter()
 
                 if best_h is not None:
-                    print(f"Solved with h={best_h} in {end_t - start_t:04f} seconds")
+                    solved_time = end_t - start_t
+                    print(f"Solved with h={best_h} in {solved_time:04f} seconds")
                     plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot)
 
-
-                # show report results
-                # res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
-                # solved_time = res[0]
-                # solutions = res[1]
-                # nodes = res[2]
-                # failures = res[3]
-                #
-                # if args.wandb:
-                #  #log results
-                #  wandb.log({
-                #    "time taken": solved_time,
-                #    "solutions": solutions,
-                #    "nodes": nodes,
-                #    "failures": failures,
-                #    "instance number": instance_num
-                #  })
-                #
-                # if args.csv is not None:
-                #  csv_writer.writerow([instance_num, solved_time, solutions, nodes, failures])
-                #
-                # instance_num += 1
-
-            # if args.wandb:
-            #  #finish run with this model, select next model
-            #  run.finish()
-            # if args.csv is not None:
-            #  f.close()
-            # reset counter for custom step
-            instance_num = 1
-
+                    if args.csv is not None:
+                        csv_writer.writerow([i, solved_time, solver.time["init"], best_x, best_y])
+            
+            if args.csv is not None:
+                f.close()
+            
 
     except KeyboardInterrupt:
         print('Interrupted')
