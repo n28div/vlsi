@@ -119,19 +119,14 @@ if __name__ == "__main__":
 
         # define CLI arguments
         parser = argparse.ArgumentParser(description="Run minizinc vlsi solving method")
-
         parser.add_argument("--models", "-m", nargs="*", type=str,
                             required=True, help="Model(s) to use. Leave empty to use all.")
-
         parser.add_argument("--instances", "-i", nargs="*", type=str,
                             required=True, help="Instances(s) to load. Leave empty to use all.")
         parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
-
         parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
-
-        # parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
-        # parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
-        #                    help="Execution time contraint in seconds. Defaults to 300s (5m).")
+        parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
+                            help="Execution time contraint in seconds. Defaults to 300s (5m).")
 
         # parse CLI arguments
         args = parser.parse_args()
@@ -173,7 +168,7 @@ if __name__ == "__main__":
                 print(f"Searching height in [{lower_bound}, {upper_bound}]")
 
                 # create model new everytime so we can change parameter value
-                solver = model(data["WIDTH"], data["cwidth"], data["cheight"], lower_bound, upper_bound)
+                solver = model(data["WIDTH"], data["cwidth"], data["cheight"], lower_bound, upper_bound, timeout=args.timeout)
                 print(f"Built encoding and constraints in: {solver.time['init']:04f}s")
 
                 start_t = time.perf_counter()
@@ -183,9 +178,8 @@ if __name__ == "__main__":
                     solver.solve(height=h)
                     print(f"[solving: {solver.time['solve']:04f}s setup: {solver.time['setup']:04f}s]")
 
-                    if solver.solved:
+                    if solver.solved and solver.remaining_time > 0:
                         best_h = h
-
                         best_x = solver.x
                         best_y = solver.y
                     else:

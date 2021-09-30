@@ -10,7 +10,7 @@ class SmtModel(object):
   Sat model implementing some common logic between solvers such as input interface, output interface etc.
   """
 
-  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int):
+  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int, timeout: int = 300):
     """Initialize solver and attributes
 
     Args:
@@ -33,7 +33,6 @@ class SmtModel(object):
     self.setup()
     self.solver = z3.Solver()
 
-    #self.solver.set("timeout", 300)
     self._solved_once = False
     self.init_time = time.perf_counter()
     self.post_static_constraints()
@@ -41,6 +40,7 @@ class SmtModel(object):
 
     self.solved_time = -1
     self.setup_time = 0
+    self.remaining_time = timeout
 
   def setup(self):
     """
@@ -53,20 +53,11 @@ class SmtModel(object):
     """
 
     # cx
-    #self.cx = z3.IntVector('x', self.N)
     self.cx = np.array([z3.Int(f"cx_{i}") for i in range(self.N)])
     # cy
-    #self.cy = z3.IntVector('y', self.N)
     self.cy = [z3.Int(f"cy_{i}") for i in range(self.N)]
 
-    #self.cwidth = [z3.Int(f"cx_{i}") for i in range(self.N)]
-    #self.cheight = [z3.Int(f"cy_{i}") for i in range(self.N)]
-    #for i in range(self.N):
-    #  self.solver.add(self.cwidth[i] == self.cwidth_z3[i])
-    #  self.solver.add(self.cheight[i] == self.cheight_z3[i])
-
     self.HEIGHT = z3.Int('HEIGHT')
-
 
   def post_static_constraints(self):
     """
@@ -109,10 +100,11 @@ class SmtModel(object):
     # search for a solution
     self.solved_time = time.perf_counter()
     self.solver.add(self.HEIGHT <= height)
-    self.solver.set("timeout", 290000)
-    issat = self.solver.check()
-    print(issat)
+    self.solver.set("timeout", int(self.remaining_time * 1000))
+    self.solver.check()
     self.solved_time = time.perf_counter() - self.solved_time
+
+    self.remaining_time -= self.solved_time
     
     self._solved_once = True
 
