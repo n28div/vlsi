@@ -99,7 +99,7 @@ if __name__ == "__main__":
         sheight = sorted(data["cheight"], reverse=True)
         swidth = [i for _, i in sorted(zip(data["cheight"], data["cwidth"]), reverse=True)]
 
-        upper_bound = greedy_height(data["N"], data["WIDTH"], sheight, swidth)
+        upper_bound = greedy_height(data["N"], data["WIDTH"], swidth, sheight)
         lower_bound = int(sum([h * w for h, w in zip(sheight, swidth)]) / data["WIDTH"])
         print(f"Searching height in [{lower_bound}, {upper_bound}]")
 
@@ -133,8 +133,6 @@ if __name__ == "__main__":
           
       if args.csv is not None:
         f.close()
-      
-
   except KeyboardInterrupt:
         print('Interrupted')
         try:
