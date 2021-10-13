@@ -9,6 +9,7 @@ class SatModel(object):
   """
   Sat model implementing some common logic between solvers such as input interface, output interface etc.
   """
+  ROTATIONS = False
 
   def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int, timeout=None):
     """Initialize solver and attributes
@@ -47,20 +48,8 @@ class SatModel(object):
   def setup(self):
     """
     Builds boards encodings:
-      * cboard - occupation of each circuit
-      * cx - column occupied by circuit c
-      * cy - row occupied by circuit c
-
-    Board is built as high as upper bounds goes so that it can be reused.
     """
-    # build cboard
-    self.cboard = np.array([[[z3.Bool(f"cb_{c}_{i}_{j}") for j in range(self.WIDTH)] for i in range(self.HEIGHT_UB)] for c in range(self.N)])
-    # cx
-    self.cx = np.array([[z3.Bool(f"cx_{c}_{j}") for j in range(self.WIDTH)] for c in range(self.N)])
-    # cy
-    self.cy = np.array([[z3.Bool(f"cy_{c}_{i}") for i in range(self.HEIGHT_UB)] for c in range(self.N)])
-    # allowed_height
-    self.a_h = np.array([z3.Bool(f"a_{i}") for i in range(self.HEIGHT_UB)])
+    raise NotImplementedError
 
   def post_static_constraints(self):
     """
@@ -147,6 +136,15 @@ class SatModel(object):
         Tuple[List[int], List[int]]: Rectangles left-bottom x and y positions
     """
     return self.x, self.y
+
+  @property
+  def rotations(self) -> List[bool]:
+    """
+    Returns:
+      List[bool]: Wether a circuit has been rotated
+    """
+    if self.ROTATIONS:
+      raise NotImplementedError
 
   @property
   def time(self) -> Dict:

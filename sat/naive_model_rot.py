@@ -5,13 +5,14 @@ from .base import SatModel
 from itertools import chain, combinations
 from typing import List
 
-class NaiveModel(SatModel):
+class NaiveModelRot(SatModel):
   """
   Naive model implementation
 
   Each circuits gets a whole WIDTHxHEIGHT board representation
   Fixed width and not overlapping circuits constraints are posted.
   """
+  ROTATIONS = True
 
   def setup(self):
     """
@@ -30,6 +31,8 @@ class NaiveModel(SatModel):
     self.cy = np.array([[z3.Bool(f"cy_{c}_{i}") for i in range(self.HEIGHT_UB)] for c in range(self.N)])
     # allowed_height
     self.a_h = np.array([z3.Bool(f"a_{i}") for i in range(self.HEIGHT_UB)])
+    # array that dictates which components have been rotated
+    self.rot = np.array([z3.Bool(f"r_{i}") for i in range(self.N)])
 
 
   def _idxs_positions(self):
@@ -51,6 +54,12 @@ class NaiveModel(SatModel):
           break
 
     return idxs
+
+  @property
+  def rotations(self):
+    rot = [self.solver.model().evaluate(self.rot[c]) for c in range(self.N)]
+    rot = [r if type(r) is bool else False for r in rot]
+    return rot
 
   def _at_most_n(self, vars: List, n: int) -> z3.BoolRef:
     """
@@ -93,10 +102,9 @@ class NaiveModel(SatModel):
 
     for c in range(self.N):
       for i in range(self.HEIGHT_UB):
-        constraints.append(z3.Implies(self.cy[c][i], self.a_h[i]))
+        constraints.append(z3.Implies(self.cy[c, i], self.a_h[i]))
 
     return z3.And(constraints)
-
 
   def cx_cy_leftbottom_constraint(self) -> z3.BoolRef:
     """
@@ -117,11 +125,17 @@ class NaiveModel(SatModel):
     constraints = list()
 
     for c in range(self.N):
-      for i in range(self.HEIGHT_UB - self.cheight[c] + 1):
-        for j in range(self.WIDTH - self.cwidth[c] + 1):
-          constraints.append(z3.And(self.cy[c, i], self.cx[c, j])
-                             ==
-                             z3.And([self.cboard[c, i + u, j + v] for u in range(self.cheight[c]) for v in range(self.cwidth[c])]))
+      for i in range(self.HEIGHT_UB):
+        for j in range(self.WIDTH):
+          placed = z3.And(self.cy[c, i], self.cx[c, j])
+          if (i < self.HEIGHT_UB - self.cheight[c] + 1) and (j < self.WIDTH - self.cwidth[c] + 1):
+            filled = z3.And([self.cboard[c, i + u, j + v] for u in range(self.cheight[c]) for v in range(self.cwidth[c])])
+            constraints.append(placed == filled)
+          
+          #if (i + self.cwidth[c] - 1 < self.HEIGHT_UB) and (j + self.cheight[c] - 1 < self.WIDTH):
+          #  filled = z3.And([self.cboard[c, i + u, j + v] for u in range(self.cwidth[c]) for v in range(self.cheight[c])])
+          #  constraints.append(placed == filled)
+          
 
     return z3.And(constraints)
 
@@ -139,21 +153,53 @@ class NaiveModel(SatModel):
     constraints = list()
 
     for c in range(self.N):
-      # circuit can be placed on a certain row only if all rows to the circuits height are allowed
-      # having enough room vertically is a necessary condition to place a circuit in a row
-      for i in range(self.HEIGHT_UB - self.cheight[c] + 1):
-        constraints.append(
-          z3.Implies(self.cy[c, i], z3.And([self.a_h[i + h] for h in range(self.cheight[c])]))
-        )
+      not_rot = z3.Not(self.rot[c])
+      rot = self.rot[c]
+
+      if self.cwidth[c] < self.cheight[c]:
+        min_dim = self.cwidth[c]
+        min_width = True
+      else:
+        min_dim = self.cwidth[c]
+        min_width = False
+
+      for i in range(self.HEIGHT_UB):
+        # circuit can be placed on a certain row only if all rows to the circuits height are allowed
+        # having enough room vertically is a necessary condition to place a circuit in a row
+        for i in range(self.HEIGHT_UB - min_dim + 1):
+          constraints.append(
+            z3.Implies(self.cy[c, i], z3.And([self.a_h[i + h] for h in range(min_dim)]))
+          )
+
+        # circuit cannot be placed on index that would bring it out of the board
+        for i in range(min_dim + 1, self.HEIGHT_UB):
+          
     
-      # circuit cannot be placed on index that would bring it out of the board
-      for i in range(self.HEIGHT_UB - self.cheight[c] + 1, self.HEIGHT_UB):
-        constraints.append(z3.Not(self.cy[c, i]))
-
-      # a circuit can be placed on a certain column only if it would not go out of the circuit
-      for j in range(self.WIDTH - self.cwidth[c] + 1, self.WIDTH):
-        constraints.append(z3.Not(self.cx[c, j]))
-
+        
+        if i + self.cheight[c] < self.HEIGHT_UB:
+          fill = z3.And([self.a_h[i + h] for h in range(self.cheight[c])])
+          constraints.append(
+            z3.Implies(self.cy[c, i], z3.And(not_rot, fill))
+          )
+        elif i + self.cwidth[c] < self.HEIGHT_UB: 
+          # check if position i is possible only because circuit is rotated
+          fill = z3.And([self.a_h[i + h] for h in range(self.cwidth[c])])
+          constraints.append(
+            z3.Implies(self.cy[c, i], z3.And(rot, fill))
+          )
+        else:
+          constraints.append(z3.Not(self.cy[c, i]))
+    
+      #for i in range(self.WIDTH - 1):
+      #  # check if position i is possible only because circuit is not rotated
+      #  if i + self.cwidth[c] + 1 < self.WIDTH:
+      #    constraints.append(z3.Implies(self.cx[c, i], not_rot))
+      #  elif i + self.cheight[c] + 1 < self.WIDTH: 
+      #    # check if position i is possible only because circuit is rotated
+      #    constraints.append(z3.Implies(self.cx[c, i], rot))
+      #  else:
+      #    constraints.append(z3.Not(self.cx[c, i]))
+    
     return z3.And(constraints)
 
   def placement_constraint(self) -> z3.BoolRef:
@@ -172,7 +218,6 @@ class NaiveModel(SatModel):
     for c in range(self.N):
       constraints.append(self._exactly_n(self.cy[c, :], 1))
       constraints.append(self._exactly_n(self.cx[c, :], 1))
-
 
     return z3.And(constraints)
 
@@ -204,6 +249,6 @@ class NaiveModel(SatModel):
       self.cx_cy_leftbottom_constraint(),
       self.placement_constraint(),
       self.bound_constraint(),
-      self.overlapping_constraint(),
+      #self.overlapping_constraint(),
       self.channeling_constraint()
     )
