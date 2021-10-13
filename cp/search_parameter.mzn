@@ -66,6 +66,12 @@ predicate hor_adjacent(var ELEMENTS: e1, var ELEMENTS: e2) =
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ y[e1] = y[e2] /\ cheight[e1] = cheight[e2] /\ hor_adjacent(e1, e2))
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
+% vertical value symmetry: if two adjacent blocks of the same width are at the same y then they can be swapped
+predicate ver_adjacent(var ELEMENTS: e1, var ELEMENTS: e2) = 
+  if y[e1] < y[e2] then y[e1] + cheight[e1] = y[e2] else y[e2] + cheight[e2] = y[e1] endif;
+constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ x[e1] = x[e2] /\ cwidth[e1] = cwidth[e2] /\ ver_adjacent(e1, e2))
+  (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
+
 % total value symmetry: if two blocks are not adjacent but they have the same width and the same height then they can be swapped
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
