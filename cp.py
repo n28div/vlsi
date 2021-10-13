@@ -15,7 +15,7 @@ def enumerate_models() -> List[str]:
   Returns: List[str]: List of implemented models, sorted by number
   """
 
-  return natsorted(glob("cp/*.mzn"))
+  return [x for x in natsorted(glob("cp/*.mzn")) if "hbound" not in x]
 
 
 def enumerate_instances() -> List[str]:
@@ -171,7 +171,8 @@ if __name__ == "__main__":
         # run model
         result = mzn_instance.solve(intermediate_solutions=True, 
                                     timeout=timedelta(seconds=args.timeout),
-                                    free_search=args.free_search)
+                                    free_search=args.free_search,
+                                    optimisation_level=1)
 
         #show report results
         res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
@@ -205,8 +206,10 @@ if __name__ == "__main__":
 
 
   except KeyboardInterrupt:
-        print('Interrupted')
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
+    f.close()
+
+    print('Interrupted')
+    try:
+        sys.exit(0)
+    except SystemExit:
+        os._exit(0)
