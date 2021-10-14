@@ -79,8 +79,8 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /
 
 solve 
    :: int_search([HEIGHT], input_order, indomain_min)
-   :: int_search(y, first_fail, indomain_min)
-   :: int_search(x, first_fail, indomain_min)
+   :: int_search(y, first_fail, indomain_max)
+   :: int_search(x, first_fail, indomain_max)
    minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];

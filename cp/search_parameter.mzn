@@ -77,9 +77,9 @@ constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
 solve :: seq_search([
-  int_search(y, smallest, indomain_min),
+  int_search(y, largest, indomain_max),
   int_search([HEIGHT], smallest, indomain_min),
-  int_search(x, smallest, indomain_min),])
+  int_search(x, largest, indomain_max),])
   minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];
