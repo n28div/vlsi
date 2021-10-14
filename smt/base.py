@@ -55,7 +55,7 @@ class SmtModel(object):
     # cx
     self.cx = np.array([z3.Int(f"cx_{i}") for i in range(self.N)])
     # cy
-    self.cy = [z3.Int(f"cy_{i}") for i in range(self.N)]
+    self.cy = np.array[z3.Int(f"cy_{i}") for i in range(self.N)]
 
     self.HEIGHT = z3.Int('HEIGHT')
 
