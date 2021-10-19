@@ -72,14 +72,15 @@ predicate ver_adjacent(var ELEMENTS: e1, var ELEMENTS: e2) =
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ x[e1] = x[e2] /\ cwidth[e1] = cwidth[e2] /\ ver_adjacent(e1, e2))
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
+
 % total value symmetry: if two blocks are not adjacent but they have the same width and the same height then they can be swapped
 constraint forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
   (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS]));
 
-solve :: seq_search([
-  int_search(y, largest, indomain_max),
-  int_search([HEIGHT], smallest, indomain_min),
-  int_search(x, largest, indomain_max),])
-  minimize HEIGHT;
+solve 
+   :: int_search([HEIGHT], input_order, indomain_min)
+   :: int_search(y, first_fail, indomain_max)
+   :: int_search(x, first_fail, indomain_max)
+   minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];
