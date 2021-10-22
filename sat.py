@@ -1,4 +1,4 @@
-from sat import NaiveModel, SymmetryModel, MaybeSymmetryModel, NaiveModelRot
+from sat import NaiveModel, SymmetryModel, MaybeSymmetryModel, NaiveModelRot, SymmetryModelRot
 from typing import Dict, Union, List
 from glob import glob
 from utils.plot import plot_vlsi, plot_multi_vlsi
