@@ -6,6 +6,7 @@ import time
 import numpy as np
 
 class SmtModel(object):
+  ROTATIONS = False
   """
   Sat model implementing some common logic between solvers such as input interface, output interface etc.
   """

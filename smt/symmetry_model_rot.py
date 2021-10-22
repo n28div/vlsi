@@ -1,7 +1,7 @@
 import typing
 import z3
 import numpy as np
-from .naive_model import NaiveModel
+from .naive_model_rot import NaiveModelRot
 from itertools import chain, combinations
 from typing import List
 
@@ -17,7 +17,7 @@ def z3_bLe(a, b):
   """
   return a <= b
   
-class SymmetryModel(NaiveModel):
+class SymmetryModelRot(NaiveModelRot):
   """
   Symmetry breaking model implementation
   """
@@ -36,10 +36,21 @@ class SymmetryModel(NaiveModel):
 
     for i in range(self.N):
       constraints.append(self.flatpos[i] == self.flatten_position(self.cy[i], self.cx[i]))
-      constraints.append(self.flatpos_hor[i] == self.flatten_position(self.cy[i], self.WIDTH - self.cwidth[i]-self.cx[i]))
-      constraints.append(self.flatpos_ver[i] == self.flatten_position(self.HEIGHT - self.cheight[i] - self.cy[i], self.cx[i]))
+      constraints.append(
+        z3.If(
+          self.rotated[i],
+          self.flatpos_hor[i] == self.flatten_position(self.cy[i], self.WIDTH - self.cheight[i] - self.cx[i]),
+          self.flatpos_hor[i] == self.flatten_position(self.cy[i], self.WIDTH - self.cwidth[i] - self.cx[i])))
+        
+      constraints.append(
+        z3.If(
+          self.rotated[i],
+          self.flatpos_ver[i] == self.flatten_position(self.HEIGHT - self.cwidth[i] - self.cy[i], self.cx[i]),
+          self.flatpos_ver[i] == self.flatten_position(self.HEIGHT - self.cheight[i] - self.cy[i], self.cx[i])
+        )
+      )
+        
     return z3.And(constraints)
-
 
   def _lex_lesseq(self, a, b) -> z3.BoolRef:
     """
@@ -63,7 +74,6 @@ class SymmetryModel(NaiveModel):
 
 
   def symmetry_breaking(self):
-
     constraints = list()
     constraints.append(self._lex_lesseq(self.flatpos, self.flatpos_hor))
     constraints.append(self._lex_lesseq(self.flatpos, self.flatpos_ver))

@@ -1,4 +1,4 @@
-from smt import NaiveModel, SymmetryModel
+from smt import NaiveModel, SymmetryModel, NaiveModelRot, SymmetryModelRot
 from typing import Dict, Union, List
 from glob import glob
 from utils.plot import plot_vlsi, plot_multi_vlsi
@@ -125,9 +125,10 @@ if __name__ == "__main__":
                 end_t = time.perf_counter()
 
                 if best_h is not None:
+                    rotations = solver.rotations if solver.ROTATIONS else None
                     solved_time = end_t - start_t
                     print(f"Solved with h={best_h} in {solved_time:04f} seconds")
-                    plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot)
+                    plot_vlsi(data["cwidth"], data["cheight"], best_x, best_y, show=args.plot, rotations=rotations)
 
                     if args.csv is not None:
                         csv_writer.writerow([i, solved_time, solver.time["init"], best_x, best_y])
