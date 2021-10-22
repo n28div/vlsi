@@ -173,22 +173,20 @@ class NaiveModelRot(SatModel):
 
         # circuit cannot be placed on index that would bring it out of the board
         for i in range(min_dim + 1, self.HEIGHT_UB):
-          
-    
         
-        if i + self.cheight[c] < self.HEIGHT_UB:
-          fill = z3.And([self.a_h[i + h] for h in range(self.cheight[c])])
-          constraints.append(
-            z3.Implies(self.cy[c, i], z3.And(not_rot, fill))
-          )
-        elif i + self.cwidth[c] < self.HEIGHT_UB: 
-          # check if position i is possible only because circuit is rotated
-          fill = z3.And([self.a_h[i + h] for h in range(self.cwidth[c])])
-          constraints.append(
-            z3.Implies(self.cy[c, i], z3.And(rot, fill))
-          )
-        else:
-          constraints.append(z3.Not(self.cy[c, i]))
+          if i + self.cheight[c] < self.HEIGHT_UB:
+            fill = z3.And([self.a_h[i + h] for h in range(self.cheight[c])])
+            constraints.append(
+              z3.Implies(self.cy[c, i], z3.And(not_rot, fill))
+            )
+          elif i + self.cwidth[c] < self.HEIGHT_UB:
+            # check if position i is possible only because circuit is rotated
+            fill = z3.And([self.a_h[i + h] for h in range(self.cwidth[c])])
+            constraints.append(
+              z3.Implies(self.cy[c, i], z3.And(rot, fill))
+            )
+          else:
+            constraints.append(z3.Not(self.cy[c, i]))
     
       #for i in range(self.WIDTH - 1):
       #  # check if position i is possible only because circuit is not rotated
