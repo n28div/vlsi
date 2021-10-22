@@ -57,8 +57,15 @@ class NaiveModelRot(SatModel):
 
   @property
   def rotations(self):
-    rot = [self.solver.model().evaluate(self.rot[c]) for c in range(self.N)]
-    rot = [r if type(r) is bool else False for r in rot]
+    model = self.solver.model()
+    rot = list()
+
+    for r in self.rot:
+      try:
+        rot.append(bool(model.evaluate(r)))
+      except:
+        rot.append(False)
+
     return rot
 
   def _at_most_n(self, vars: List, n: int) -> z3.BoolRef:
@@ -125,17 +132,25 @@ class NaiveModelRot(SatModel):
     constraints = list()
 
     for c in range(self.N):
-      for i in range(self.HEIGHT_UB):
-        for j in range(self.WIDTH):
-          placed = z3.And(self.cy[c, i], self.cx[c, j])
-          if (i < self.HEIGHT_UB - self.cheight[c] + 1) and (j < self.WIDTH - self.cwidth[c] + 1):
-            filled = z3.And([self.cboard[c, i + u, j + v] for u in range(self.cheight[c]) for v in range(self.cwidth[c])])
-            constraints.append(placed == filled)
-          
-          #if (i + self.cwidth[c] - 1 < self.HEIGHT_UB) and (j + self.cheight[c] - 1 < self.WIDTH):
-          #  filled = z3.And([self.cboard[c, i + u, j + v] for u in range(self.cwidth[c]) for v in range(self.cheight[c])])
-          #  constraints.append(placed == filled)
-          
+      for i in range(self.HEIGHT_UB - self.cheight[c] + 1):
+        for j in range(self.WIDTH - self.cwidth[c] + 1):
+          constraints.append(
+            z3.Implies(
+              z3.Not(self.rot[c]),
+              z3.And(self.cy[c, i], self.cx[c, j])
+                     ==
+                     z3.And([self.cboard[c, i + u, j + v] for u in range(self.cheight[c]) for v in range(self.cwidth[c])]))
+          )
+
+      for i in range(self.HEIGHT_UB - self.cwidth[c] + 1):
+        for j in range(self.WIDTH - self.cheight[c] + 1):
+          constraints.append(
+            z3.Implies(
+              self.rot[c],
+              z3.And(self.cy[c, i], self.cx[c, j])
+                     ==
+                     z3.And([self.cboard[c, i + u, j + v] for u in range(self.cwidth[c]) for v in range(self.cheight[c])]))
+          )
 
     return z3.And(constraints)
 
@@ -153,51 +168,49 @@ class NaiveModelRot(SatModel):
     constraints = list()
 
     for c in range(self.N):
-      not_rot = z3.Not(self.rot[c])
-      rot = self.rot[c]
-
-      if self.cwidth[c] < self.cheight[c]:
-        min_dim = self.cwidth[c]
-        min_width = True
-      else:
-        min_dim = self.cwidth[c]
-        min_width = False
-
       for i in range(self.HEIGHT_UB):
-        # circuit can be placed on a certain row only if all rows to the circuits height are allowed
-        # having enough room vertically is a necessary condition to place a circuit in a row
-        for i in range(self.HEIGHT_UB - min_dim + 1):
-          constraints.append(
-            z3.Implies(self.cy[c, i], z3.And([self.a_h[i + h] for h in range(min_dim)]))
-          )
-
-        # circuit cannot be placed on index that would bring it out of the board
-        for i in range(min_dim + 1, self.HEIGHT_UB):
+        fits_not_rot = i + self.cheight[c] <= self.HEIGHT_UB
+        fits_rot = i + self.cwidth[c] <= self.HEIGHT_UB
         
-          if i + self.cheight[c] < self.HEIGHT_UB:
-            fill = z3.And([self.a_h[i + h] for h in range(self.cheight[c])])
-            constraints.append(
-              z3.Implies(self.cy[c, i], z3.And(not_rot, fill))
-            )
-          elif i + self.cwidth[c] < self.HEIGHT_UB:
-            # check if position i is possible only because circuit is rotated
-            fill = z3.And([self.a_h[i + h] for h in range(self.cwidth[c])])
-            constraints.append(
-              z3.Implies(self.cy[c, i], z3.And(rot, fill))
-            )
-          else:
-            constraints.append(z3.Not(self.cy[c, i]))
-    
-      #for i in range(self.WIDTH - 1):
-      #  # check if position i is possible only because circuit is not rotated
-      #  if i + self.cwidth[c] + 1 < self.WIDTH:
-      #    constraints.append(z3.Implies(self.cx[c, i], not_rot))
-      #  elif i + self.cheight[c] + 1 < self.WIDTH: 
-      #    # check if position i is possible only because circuit is rotated
-      #    constraints.append(z3.Implies(self.cx[c, i], rot))
-      #  else:
-      #    constraints.append(z3.Not(self.cx[c, i]))
-    
+        fits_both = fits_rot and fits_not_rot
+
+        # if circuit does not fit either rotated or not then this y value is forbidden
+        if not (fits_rot or fits_not_rot):
+          constraints.append(z3.Not(self.cy[c, i]))
+        elif fits_rot and not fits_not_rot:
+          constraints.append(z3.Implies(self.cy[c, i], self.rot[c]))
+        elif fits_not_rot and not fits_rot:
+          constraints.append(z3.Implies(self.cy[c, i], z3.Not(self.rot[c])))
+
+      # a circuit can be placed on a certain column only if it would not go out of the circuit
+      for j in range(self.WIDTH):
+        fits_not_rot = j + self.cwidth[c] <= self.WIDTH
+        fits_rot = j + self.cheight[c] <= self.WIDTH
+        
+        fits_both = fits_rot and fits_not_rot
+      
+        # if circuit does not fit either rotated or not then this y value is forbidden
+        if not (fits_rot or fits_not_rot):
+          constraints.append(z3.Not(self.cx[c, j]))
+        elif fits_rot and not fits_not_rot:
+          constraints.append(z3.Implies(self.cx[c, j], self.rot[c]))
+        elif fits_not_rot and not fits_rot:
+          constraints.append(z3.Implies(self.cx[c, j], z3.Not(self.rot[c])))
+
+      # circuit can be placed on a certain row only if all rows to the circuits height are allowed
+      # having enough room vertically is a necessary condition to place a circuit in a row
+      for i in range(self.HEIGHT_UB - self.cheight[c] + 1):
+        constraints.append(
+          z3.Implies(z3.And(z3.Not(self.rot[c]), self.cy[c, i]), z3.And([self.a_h[i + h] for h in range(self.cheight[c])]))
+        )
+
+      # circuit can be placed on a certain row only if all rows to the circuits height are allowed
+      # having enough room vertically is a necessary condition to place a circuit in a row
+      for i in range(self.HEIGHT_UB - self.cwidth[c] + 1):
+        constraints.append(
+          z3.Implies(z3.And(self.rot[c], self.cy[c, i]), z3.And([self.a_h[i + h] for h in range(self.cwidth[c])]))
+        )
+
     return z3.And(constraints)
 
   def placement_constraint(self) -> z3.BoolRef:
@@ -247,6 +260,6 @@ class NaiveModelRot(SatModel):
       self.cx_cy_leftbottom_constraint(),
       self.placement_constraint(),
       self.bound_constraint(),
-      #self.overlapping_constraint(),
+      self.overlapping_constraint(),
       self.channeling_constraint()
     )
