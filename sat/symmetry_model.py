@@ -34,9 +34,9 @@ class SymmetryModel(NaiveModel):
 
     for i in range(self.HEIGHT_UB):
       for j in range(self.WIDTH):
-        constraints.append(self.iboard[i, j] == z3.Or(
-          [z3.And(self.cy[e][i], self.cx[e][j]) for e in range(self.N)]
-        ))
+        constraints.append(
+          self.iboard[i, j] == z3.Or(list(self.cboard[:, i, j]))
+        )
         
     return z3.And(constraints)
     
