@@ -3,25 +3,25 @@ import os
 import pandas as pd
 import numpy as np
 
-naive_model = pd.read_csv(r"csv/sat/NaiveModel.csv", header=0, index_col=0, sep=",")
-naive_model = naive_model[["total_time"]]
+naive_model = pd.read_csv(r"csv/smt/NaiveModel.csv", header=0, index_col=0, sep=",")
+naive_model = naive_model[["time"]]
 naive_model[naive_model > 300] = 300
-naive_model_rot = pd.read_csv(r"csv/sat/NaiveModelRot.csv", header=0, index_col=0, sep=",")
-naive_model_rot = naive_model_rot[["total_time"]]
+naive_model_rot = pd.read_csv(r"csv/smt/NaiveModelRot.csv", header=0, index_col=0, sep=",")
+naive_model_rot = naive_model_rot[["time"]]
 naive_model_rot[naive_model_rot > 300] = 300
-symmetry_model = pd.read_csv(r"csv/sat/SymmetryModel.csv", header=0, index_col=0, sep=",")
-symmetry_model = symmetry_model[["total_time"]]
+symmetry_model = pd.read_csv(r"csv/smt/SymmetryModel.csv", header=0, index_col=0, sep=",")
+symmetry_model = symmetry_model[["time"]]
 symmetry_model[symmetry_model > 300] = 300
-symmetry_model_rot = pd.read_csv(r"csv/sat/SymmetryModelRot.csv", header=0, index_col=0, sep=",")
-symmetry_model_rot = symmetry_model_rot[["total_time"]]
+symmetry_model_rot = pd.read_csv(r"csv/smt/SymmetryModelRot.csv", header=0, index_col=0, sep=",")
+symmetry_model_rot = symmetry_model_rot[["time"]]
 symmetry_model_rot[symmetry_model_rot > 300] = 300
 
 print(symmetry_model_rot)
 
-nm = naive_model["total_time"].tolist()
-nmrot = naive_model_rot["total_time"].tolist()
-sm = symmetry_model["total_time"].tolist()
-smrot = symmetry_model_rot["total_time"].tolist()
+nm = naive_model["time"].tolist()
+nmrot = naive_model_rot["time"].tolist()
+sm = symmetry_model["time"].tolist()
+smrot = symmetry_model_rot["time"].tolist()
 ins = range(1,41)
 _ins = np.arange(len(ins))
 
