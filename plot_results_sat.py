@@ -63,3 +63,17 @@ ax2.set_xlabel("instance number")
 ax2.set_ylabel("time (s)")
 plt.show()
 
+combined3 = pd.DataFrame(np.c_[nm, sm], index=ins)
+combined3.columns = ["Naive Model", "Symmetry Model"]
+ax = combined3.plot(kind="bar", width=0.75, legend=True)
+ax.set_xlabel("instance number")
+ax.set_ylabel("time (s)")
+plt.show()
+
+combined4 = pd.DataFrame(np.c_[nmrot, smrot], index=ins)
+combined4.columns = ["Naive Model with Rotations", "Symmetry Model with Rotations"]
+ax2 = combined4.plot(kind="bar", width=0.75, legend=True)
+ax2.set_xlabel("instance number")
+ax2.set_ylabel("time (s)")
+plt.show()
+
