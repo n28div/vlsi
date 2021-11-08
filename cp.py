@@ -73,39 +73,41 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=F
     nodes = -1
     failures = -1
 
-  max_y =  max(result.solution[-1].y)
-  max_y_idx = result.solution[-1].y.index(max_y)
-  height = max_y + data["cheight"][max_y_idx]
-  print("Height: %d" % height)
-  print("Took: %ss to find %d solutions" % (time, nSolutions))
-  print("Nodes: %s - failures: %s" % (nodes, failures))
+  if len(result) > 0:
+    max_y =  max(result.solution[-1].y)
+    max_y_idx = result.solution[-1].y.index(max_y)
+    height = max_y + data["cheight"][max_y_idx]
+    print("Height: %d" % height)
+    print("Took: %ss to find %d solutions" % (time, nSolutions))
+    print("Nodes: %s - failures: %s" % (nodes, failures))
 
-  if show:
-    has_rotations = hasattr(result.solution[-1], "rotated")
+    if show:
+      has_rotations = hasattr(result.solution[-1], "rotated")
 
-    if plot_intermediate:
-      solution_x = [r.x for r in result.solution]
-      solution_y = [r.y for r in result.solution]
+      if plot_intermediate:
+        solution_x = [r.x for r in result.solution]
+        solution_y = [r.y for r in result.solution]
 
-      if has_rotations:
-        rotated = [r.rotated for r in result.solution]
-      else:
-        rotated = [[False for _ in range(len(data["cwidth"]))] for _ in result.solution]
+        if has_rotations:
+          rotated = [r.rotated for r in result.solution]
+        else:
+          rotated = [[False for _ in range(len(data["cwidth"]))] for _ in result.solution]
 
-      plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
-    else:    
-      solution_x = result.solution[-1].x
-      solution_y = result.solution[-1].y
+        plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
+      else:    
+        solution_x = result.solution[-1].x
+        solution_y = result.solution[-1].y
 
-      if has_rotations:
-        rotated = result.solution[-1].rotated
-      else:
-        rotated = [False for _ in range(len(data["cwidth"]))]
-    
-      plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
+        if has_rotations:
+          rotated = result.solution[-1].rotated
+        else:
+          rotated = [False for _ in range(len(data["cwidth"]))]
+      
+        plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
+  else:
+    print("No partial solutions available")
 
   return time, nSolutions, nodes, failures
-
 
 if __name__ == "__main__":
   try:
@@ -119,6 +121,7 @@ if __name__ == "__main__":
                         required=True, help="Instances(s) to load. Leave empty to use all.")
     parser.add_argument("--wandb", "-wandb", action="store_true", help="Log data using wandb.")
     parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
+    parser.add_argument("--output", "-o", nargs=1, type=str, help="Save results files in specified directory.")
     parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
     parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
     parser.add_argument("--solver", "-solver", "-s", nargs=1, type=str, default=["chuffed"], choices=["chuffed", "gecode"],
@@ -145,6 +148,10 @@ if __name__ == "__main__":
         f = open(os.path.join(args.csv[0], os.path.basename(m) + ".csv"), "w")
         csv_writer = csv.writer(f)
         csv_writer.writerow(["instance nr", "time", "solutions", "nodes", "failures"])
+
+      if args.output is not None:
+        if not os.path.exists(args.output[0]):
+          os.mkdir(args.output[0])
 
       if args.wandb:
         run = wandb.init(project='vlsi', entity='fatlads', tags=[m])
@@ -193,7 +200,6 @@ if __name__ == "__main__":
 
         if args.csv is not None:
           csv_writer.writerow([instance_num, solved_time, solutions, nodes, failures])
-
         instance_num += 1
       
       if args.wandb:
