@@ -41,15 +41,12 @@ constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
 function var int: flattenpos(var int: i, var int: j) = (i * WIDTH) + j;
 array[ELEMENTS] of var int: flatpos;
 constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
-
-array[ELEMENTS] of var int: flatpos_hor;
-constraint forall (e in ELEMENTS) (flatpos_hor[e] = flattenpos(y[e], (WIDTH - cwidth[e]) - x[e]));
-array[ELEMENTS] of var int: flatpos_ver;
-constraint forall (e in ELEMENTS) (flatpos_ver[e] = flattenpos((HEIGHT - cheight[e]) - y[e], x[e]));
-
 % horizontal, vertical and combined symmetry breaking
-constraint lex_lesseq(flatpos, flatpos_hor);
-constraint lex_lesseq(flatpos, flatpos_ver);
+constraint symmetry_breaking_constraint(lex_lesseq(flatpos, [flattenpos(y[e], WIDTH - cwidth[e] - x[e]) | e in ELEMENTS]));
+
+% total value symmetry: if two blocks are not adjacent but they have the same width and the same height then they can be swapped
+%constraint symmetry_breaking_constraint(forall(e1, e2 in ELEMENTS where e1 != e2 /\ cwidth[e1] = cwidth[e2] /\ cheight[e1] = cheight[e2])
+%  (lex_lesseq(flatpos, [if e = e1 then flatpos[e2] elseif e = e2 then flatpos[e1] else flatpos[e] endif | e in ELEMENTS])));
 
 solve minimize HEIGHT;
 

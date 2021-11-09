@@ -1,5 +1,6 @@
 include "globals.mzn";
 include "determine_hbound.mzn";
+include "chuffed.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file
@@ -42,10 +43,10 @@ constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 constraint forall(e in ELEMENTS) (x[e] <= WIDTH - cwidth[e]);
 constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
 
-solve :: seq_search([
-   int_search(y, first_fail, indomain_max),
-   int_search(x, first_fail, indomain_max),
-   int_search([HEIGHT], input_order, indomain_min),
-  ]) minimize HEIGHT;
+solve
+   :: int_search(y, smallest_largest, indomain_max)
+   :: int_search(x, smallest_largest, indomain_max)
+   :: int_search([HEIGHT], input_order, indomain_min)
+   minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];

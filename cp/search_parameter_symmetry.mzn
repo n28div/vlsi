@@ -47,20 +47,13 @@ constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
 function var int: flattenpos(var int: i, var int: j) = (i * WIDTH) + j;
 array[ELEMENTS] of var int: flatpos;
 constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
-
-array[ELEMENTS] of var int: flatpos_hor;
-constraint forall (e in ELEMENTS) (flatpos_hor[e] = flattenpos(y[e], (WIDTH - cwidth[e]) - x[e]));
-array[ELEMENTS] of var int: flatpos_ver;
-constraint forall (e in ELEMENTS) (flatpos_ver[e] = flattenpos((HEIGHT - cheight[e]) - y[e], x[e]));
-
 % horizontal, vertical and combined symmetry breaking
-constraint lex_lesseq(flatpos, flatpos_hor);
-constraint lex_lesseq(flatpos, flatpos_ver);
+constraint symmetry_breaking_constraint(lex_lesseq(flatpos, [flattenpos(y[e], WIDTH - cwidth[e] - x[e]) | e in ELEMENTS]));
 
-solve :: seq_search([
-   int_search(y, first_fail, indomain_max),
-   int_search(x, first_fail, indomain_max),
-   int_search([HEIGHT], input_order, indomain_min),
-  ]) minimize HEIGHT;
+solve
+   :: int_search(y, smallest_largest, indomain_max)
+   :: int_search(x, smallest_largest, indomain_max)
+   :: int_search([HEIGHT], input_order, indomain_min)
+   minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];
