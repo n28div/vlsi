@@ -15,20 +15,20 @@ int: y_lb = max (e in ELEMENTS) (cheight[e]);
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
 array[ELEMENTS] of var 0..y_ub: y; % circuit y position, 0-indexed, goes from index 0 to upper bound
 
-%square elements are not allowed to be rotated
-array[ELEMENTS] of bool: rotatable = [if cwidth[e] == cheight[e] then false else true endif | e in ELEMENTS];
-
 array[ELEMENTS] of var bool: rotated;
 array[ELEMENTS] of var int: rwidth;
 array[ELEMENTS] of var int: rheight;
 
-constraint forall (e in ELEMENTS) (rwidth[e] = if (rotated[e] /\ rotatable[e]) then cheight[e] else cwidth[e] endif);
-constraint forall (e in ELEMENTS) (rheight[e] = if (rotated[e] /\ rotatable[e]) then cwidth[e] else cheight[e] endif);
+constraint forall (e in ELEMENTS where cwidth[e] = cheight[e]) (rotated[e] = false);
+constraint forall (e in ELEMENTS) (rwidth[e] = if (rotated[e]) then cheight[e] else cwidth[e] endif);
+constraint forall (e in ELEMENTS) (rheight[e] = if (rotated[e]) then cwidth[e] else cheight[e] endif);
 
 % maximum width is fixed by the parameter W
 constraint max (e in ELEMENTS) (x[e] + rwidth[e]) <= WIDTH;
 % no overlapping of boxes
 constraint diffn(x, y, rwidth, rheight);
+constraint cumulative(x, rwidth, rheight, HEIGHT);
+constraint cumulative(y, rheight, rwidth, WIDTH);
 
 % height of circuit is the highest placed circuit top-left corner
 var y_lb..y_ub: HEIGHT = max (e in ELEMENTS) (y[e] + rheight[e]);
@@ -44,8 +44,8 @@ array[ELEMENTS] of int: carea = [cwidth[e]*cheight[e] | e in ELEMENTS];
 constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 
 % domain reduction for each element, remove idxs that would make the circuit go out of the board
-constraint forall(e in ELEMENTS) (x[e] <= WIDTH - cwidth[e]);
-constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
+constraint forall(e in ELEMENTS) (x[e] <= WIDTH - rwidth[e]);
+constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - rheight[e]);
 
 % flatten the position of each circuit in a single int
 % adapted from http://vlsicad.eecs.umich.edu/BK/Slots/cache/vlsicad.eecs.umich.edu/BK/BloBB/PAPERS/symcon-06.pdf
@@ -61,4 +61,4 @@ solve
    :: int_search([HEIGHT], input_order, indomain_min)
    minimize HEIGHT;
 
-output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \nrotations: = \(rotated) \nrotatable: = \(rotatable)" ];
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \nrotations: = \(rotated)" ];
