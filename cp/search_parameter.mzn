@@ -43,6 +43,14 @@ constraint sum (e in ELEMENTS) (carea[e]) <= board_area;
 constraint forall(e in ELEMENTS) (x[e] <= WIDTH - cwidth[e]);
 constraint forall(e in ELEMENTS) (y[e] <= HEIGHT - cheight[e]);
 
+% flatten the position of each circuit in a single int
+% adapted from http://vlsicad.eecs.umich.edu/BK/Slots/cache/vlsicad.eecs.umich.edu/BK/BloBB/PAPERS/symcon-06.pdf
+function var int: flattenpos(var int: i, var int: j) = (i * WIDTH) + j;
+array[ELEMENTS] of var int: flatpos;
+constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
+% horizontal, vertical and combined symmetry breaking
+constraint symmetry_breaking_constraint(lex_lesseq(flatpos, [flattenpos(y[e], WIDTH - cwidth[e] - x[e]) | e in ELEMENTS]));
+
 solve
    :: int_search(y, smallest_largest, indomain_max)
    :: int_search(x, smallest_largest, indomain_max)
