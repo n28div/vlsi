@@ -27,6 +27,8 @@ constraint forall (e in ELEMENTS) (rheight[e] = if (rotated[e]) then cwidth[e] e
 constraint max (e in ELEMENTS) (x[e] + rwidth[e]) <= WIDTH;
 % no overlapping of boxes
 constraint diffn(x, y, rwidth, rheight);
+constraint cumulative(x, rwidth, rheight, HEIGHT);
+constraint cumulative(y, rheight, rwidth, WIDTH);
 
 % height of circuit is the highest placed circuit top-left corner
 var y_lb..y_ub: HEIGHT = max (e in ELEMENTS) (y[e] + rheight[e]);
@@ -59,7 +61,8 @@ constraint forall(e1, e2 in ELEMENTS where e1 > e2 /\ rheight[e1] = rheight[e2])
   (if y[e1] = y[e2] then x[e2] >= rwidth[e1] + x[e1] endif);
 
 solve 
-  :: seq_search([int_search(y, first_fail, indomain_min), int_search(x, first_fail, indomain_min)])
+  :: int_search(y, first_fail, indomain_max) 
+  :: int_search(x, first_fail, indomain_min)
   minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \nrotations: = \(rotated)" ];
