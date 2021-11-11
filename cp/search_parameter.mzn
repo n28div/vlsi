@@ -50,11 +50,14 @@ array[ELEMENTS] of var int: flatpos;
 constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
 % horizontal, vertical and combined symmetry breaking
 constraint symmetry_breaking_constraint(lex_lesseq(flatpos, [flattenpos(y[e], WIDTH - cwidth[e] - x[e]) | e in ELEMENTS]));
+constraint symmetry_breaking_constraint(lex_lesseq(flatpos, [flattenpos(HEIGHT - cheight[e] - y[e], x[e]) | e in ELEMENTS]));
 
-solve
-   :: int_search(y, smallest_largest, indomain_max)
-   :: int_search(x, smallest_largest, indomain_max)
-   :: int_search([HEIGHT], input_order, indomain_min)
-   minimize HEIGHT;
+% value symmetry: if two values of the same height are adjacent then break symmetry between them
+constraint forall(e1, e2 in ELEMENTS where e1 > e2 /\ cheight[e1] = cheight[e2])
+  (if y[e1] = y[e2] then x[e2] >= cwidth[e1] + x[e1] endif);
+
+solve 
+  :: seq_search([int_search(y, first_fail, indomain_min), int_search(x, first_fail, indomain_min)])
+  minimize HEIGHT;
 
 output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];

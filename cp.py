@@ -1,4 +1,4 @@
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Tuple
 from glob import glob
 from minizinc import Instance, Model, Solver, Result, model
 from utils.plot import plot_vlsi, plot_multi_vlsi
@@ -49,6 +49,25 @@ def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
     d["cheight"] = list(map(lambda d: int(d.split(" ")[1]), cdim))
 
   return d
+
+def save_solution(path:str, data: Dict[str, Union[int, List[int]]], positions: List[Tuple[int, int]]):
+  """
+  Save solution into appropriate format
+
+  Args:
+      path (str): Path of file were solution in written
+      data (Dict[str, Union[int, List[int]]]): Data of instance being solved
+      result (Result): Result coming from the minizinc interface
+  """
+  highest_idx = positions.index(max(positions, key=lambda x: x[1]))
+  height = positions[highest_idx][1] + data["cheight"][highest_idx]
+
+  with open(path, "w") as f:
+    f.write(f"{data['WIDTH']} {height}\n")
+    f.write(f"{data['N']}\n")
+
+    for (x, y), h, w in zip(positions, data["cheight"], data["cwidth"]):
+      f.write(f"{w} {h} {x} {y}\n")
 
 
 def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=False, plot_intermediate=False, **kwargs):
@@ -200,6 +219,13 @@ if __name__ == "__main__":
 
         if args.csv is not None:
           csv_writer.writerow([instance_num, solved_time, solutions, nodes, failures])
+        
+        if args.output is not None and solutions > 0:
+          path = os.path.join(args.output[0], f"ins-{instance_num}.txt")
+          x = result.solution[-1].x
+          y = result.solution[-1].y
+          save_solution(path, data, list(zip(x, y)))
+                  
         instance_num += 1
       
       if args.wandb:

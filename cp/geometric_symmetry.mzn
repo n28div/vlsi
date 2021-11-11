@@ -43,6 +43,7 @@ array[ELEMENTS] of var int: flatpos;
 constraint forall (e in ELEMENTS) (flatpos[e] = flattenpos(y[e], x[e]));
 % horizontal, vertical and combined symmetry breaking
 constraint symmetry_breaking_constraint(lex_lesseq(flatpos, [flattenpos(y[e], WIDTH - cwidth[e] - x[e]) | e in ELEMENTS]));
+constraint symmetry_breaking_constraint(lex_lesseq(flatpos, [flattenpos(HEIGHT - cheight[e] - y[e], x[e]) | e in ELEMENTS]));
 
 solve minimize HEIGHT;
 

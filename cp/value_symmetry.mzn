@@ -1,6 +1,5 @@
 include "globals.mzn";
 include "determine_hbound.mzn";
-include "chuffed.mzn";
 
 int: WIDTH; % width of the circuit
 int: N; % number of elements in the input file
@@ -9,27 +8,19 @@ set of int: ELEMENTS = 1..N;
 array[ELEMENTS] of int: cwidth;
 array[ELEMENTS] of int: cheight;
 
-% get the permutation that sorts cheight
-array[ELEMENTS] of ELEMENTS: sorted_idxs = reverse(arg_sort(cheight));
-% sort cheight and cwidth by cheight
-array[ELEMENTS] of int: s_cwidth = [cwidth[sorted_idxs[e]] | e in ELEMENTS];
-array[ELEMENTS] of int: s_cheight = [cheight[sorted_idxs[e]] | e in ELEMENTS];
-
-int: y_ub = greedy_height(N, WIDTH, s_cwidth, s_cheight, 0, 0, 0, 1);
+int: y_ub = greedy_height(N, WIDTH, reverse(sort_by(cwidth, cheight)), reverse(sort(cheight)), 0, 0, 0, 1);
 int: y_lb = max (e in ELEMENTS) (cheight[e]);
 
 array[ELEMENTS] of var 0..WIDTH: x; % left-corner circuit positions, 0-indexed
 array[ELEMENTS] of var 0..y_ub: y; % circuit y position, 0-indexed, goes from index 0 to upper bound
 
-% height of circuit is the highest placed circuit top-left corner
-var y_lb..y_ub: HEIGHT = max (e in ELEMENTS) (y[e] + cheight[e]);
-
 % maximum width is fixed by the parameter W
 constraint max (e in ELEMENTS) (x[e] + cwidth[e]) <= WIDTH;
 % no overlapping of boxes
 constraint diffn(x, y, cwidth, cheight);
-constraint cumulative(x, cwidth, cheight, HEIGHT);
-constraint cumulative(y, cheight, cwidth, WIDTH);
+
+% height of circuit is the highest placed circuit top-left corner
+var y_lb..y_ub: HEIGHT = max (e in ELEMENTS) (y[e] + cheight[e]);
 
 % implicit constraint: summing circuits width must be less or equal than board width for each board row
 constraint forall (h in 0..HEIGHT) (sum (e in ELEMENTS where cheight[e] + y[e] > h /\ y[e] <= h) (cwidth[e]) <= WIDTH);
@@ -57,9 +48,7 @@ constraint symmetry_breaking_constraint(lex_lesseq(flatpos, [flattenpos(HEIGHT -
 % value symmetry: if two values of the same height are adjacent then break symmetry between them
 constraint forall(e1, e2 in ELEMENTS where e1 > e2 /\ cheight[e1] = cheight[e2])
   (if y[e1] = y[e2] then x[e2] >= cwidth[e1] + x[e1] endif);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+solve minimize HEIGHT;
 
-solve 
-  :: seq_search([int_search(y, first_fail, indomain_min), int_search(x, first_fail, indomain_min)])
-  minimize HEIGHT;
-
-output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT)" ];
+output [ "X = \(x) \nY = \(y) \nh = \(HEIGHT) \n" ];
