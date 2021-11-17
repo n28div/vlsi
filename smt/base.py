@@ -5,13 +5,14 @@ from z3.z3 import Int, Not
 import time
 import numpy as np
 
-class SatModel(object):
+class SmtModel(object):
+  ROTATIONS = False
   """
   Sat model implementing some common logic between solvers such as input interface, output interface etc.
   """
   ROTATIONS = False
 
-  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int, timeout=None):
+  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int, timeout: int = 300):
     """Initialize solver and attributes
 
     Args:
@@ -23,6 +24,7 @@ class SatModel(object):
     """    
     self.N = len(cwidth)
     self.WIDTH = width
+
     self.cwidth = cwidth
     self.cheight = cheight
     
@@ -35,21 +37,27 @@ class SatModel(object):
     self.remaining_time = timeout
 
     self.solver = z3.Solver()
-    self._solved_once = False
-    self._solved = False
 
+    self._solved_once = False
     self.init_time = time.perf_counter()
     self.post_static_constraints()
     self.init_time = time.perf_counter() - self.init_time
 
     self.solved_time = -1
     self.setup_time = 0
+    self.remaining_time = timeout
 
   def setup(self):
     """
     Builds boards encodings:
     """
-    raise NotImplementedError
+
+    # cx
+    self.cx = np.array([z3.Int(f"cx_{i}") for i in range(self.N)])
+    # cy
+    self.cy = np.array([z3.Int(f"cy_{i}") for i in range(self.N)])
+
+    self.HEIGHT = z3.Int('HEIGHT')
 
   def post_static_constraints(self):
     """
@@ -79,12 +87,9 @@ class SatModel(object):
     # setup time is time spent setting up before actually solving
     self.setup_time = 0
     # set the current height
-    self.HEIGHT = height
 
     # post dynamic constraints
     self.setup_time = time.perf_counter()
-    allowed_height = z3.And([self.a_h[h] for h in range(height)])
-    not_allowed_height = z3.Not(z3.Or([self.a_h[h] for h in range(height, self.HEIGHT_UB)]))
     
     pre_requisites = [allowed_height]
     if height < self.HEIGHT_UB:
@@ -96,8 +101,12 @@ class SatModel(object):
     self.solver.set("timeout", int(self.remaining_time * 1000))
 
     self.solved_time = time.perf_counter()
-    self._solved = self.solver.check(*pre_requisites) == z3.sat
+    self.solver.add(self.HEIGHT <= height)
+    self.solver.set("timeout", int(self.remaining_time * 1000))
+    self.solver.check()
     self.solved_time = time.perf_counter() - self.solved_time
+
+    self.remaining_time -= self.solved_time
     
     self.remaining_time -= self.solved_time
 
