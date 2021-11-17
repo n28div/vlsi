@@ -1,4 +1,5 @@
-minizinc
-matplotlib
-natsort
-wandb
+matplotlib==3.4.3
+minizinc==0.4.2
+natsort==7.1.1
+numpy==1.21.2
+z3-solver==4.8.12.0

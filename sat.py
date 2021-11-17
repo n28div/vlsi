@@ -10,7 +10,8 @@ import csv
 import time
 import numpy as np
 import argparse
-
+from utils.io import txt2dict, save_solution
+import re
 
 def enumerate_models() -> List[str]:
   """
@@ -30,30 +31,6 @@ def enumerate_instances() -> List[str]:
   return natsorted(glob("instances/*.txt"))
 
 
-def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
-  """Converts txt input file to dict.
-  
-  Args: path (str): Input file
-  Returns: Dict[str, Union[int, List[int]]]: Key is the variable, value is the variable's value
-  """
-  d = dict()
-
-  with open(path) as txt:
-    content = txt.readlines()
-
-    # 1st line - board width
-    d["WIDTH"] = int(content[0].strip())
-    # 2nd line - number of circuits
-    d["N"] = int(content[1].strip())
-
-    # following line contains width and height of each circuit separated by a space
-    cdim = content[2:]
-    d["cwidth"] = list(map(lambda d: int(d.split(" ")[0]), cdim))
-    d["cheight"] = list(map(lambda d: int(d.split(" ")[1]), cdim))
-
-  return d
-
-
 if __name__ == "__main__":
   try:
     sys.setrecursionlimit(3000)
@@ -66,6 +43,7 @@ if __name__ == "__main__":
                         required=True, help="Instances(s) to load. Leave empty to use all.")
     parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
     parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
+    parser.add_argument("--output", "-o", nargs=1, type=str, help="Save results files in specified directory.")
     parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
                         help="Execution time contraint in seconds. Defaults to 300s (5m).")
                         
@@ -87,7 +65,12 @@ if __name__ == "__main__":
         csv_writer = csv.writer(f)
         csv_writer.writerow(["instance nr", "total_time", "build_time", "x", "y"])
       
+      if args.output is not None:
+        if not os.path.exists(args.output[0]):
+          os.mkdir(args.output[0])
+
       for i in instances:
+        instance_num = re.findall(r'(\d+)', i)[0]
         print("%s %s %s %s %s" % ("-" * 5, model, "-" * 3, i, "-" * 5))
 
         best_x = []
@@ -131,6 +114,12 @@ if __name__ == "__main__":
         
           if args.csv is not None:
             csv_writer.writerow([i, solved_time, solver.time["init"], best_x, best_y])
+          
+        if args.output is not None and best_h is not None:
+          path = os.path.join(args.output[0], f"ins-{instance_num}.txt")
+          x = best_x
+          y = best_y
+          save_solution(path, data, list(zip(x, y)))
           
       if args.csv is not None:
         f.close()

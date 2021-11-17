@@ -4,9 +4,10 @@ from minizinc import Instance, Model, Solver, Result, model
 from utils.plot import plot_vlsi, plot_multi_vlsi
 from natsort import natsorted
 import sys, os
-import wandb
 from datetime import timedelta
 import csv
+from utils.io import txt2dict, save_solution
+import re
 
 def enumerate_models() -> List[str]:
   """
@@ -25,49 +26,6 @@ def enumerate_instances() -> List[str]:
   Returns: List[str]: List of available instances, sorted by number
   """
   return natsorted(glob("instances/*.txt"))
-
-
-def txt2dict(path: str) -> Dict[str, Union[int, List[int]]]:
-  """Converts txt input file to dict.
-  
-  Args: path (str): Input file
-  Returns: Dict[str, Union[int, List[int]]]: Key is the variable, value is the variable's value
-  """
-  d = dict()
-
-  with open(path) as txt:
-    content = txt.readlines()
-
-    # 1st line - board width
-    d["WIDTH"] = int(content[0].strip())
-    # 2nd line - number of circuits
-    d["N"] = int(content[1].strip())
-
-    # following line contains width and height of each circuit separated by a space
-    cdim = content[2:]
-    d["cwidth"] = list(map(lambda d: int(d.split(" ")[0]), cdim))
-    d["cheight"] = list(map(lambda d: int(d.split(" ")[1]), cdim))
-
-  return d
-
-def save_solution(path:str, data: Dict[str, Union[int, List[int]]], positions: List[Tuple[int, int]]):
-  """
-  Save solution into appropriate format
-
-  Args:
-      path (str): Path of file were solution in written
-      data (Dict[str, Union[int, List[int]]]): Data of instance being solved
-      result (Result): Result coming from the minizinc interface
-  """
-  highest_idx = positions.index(max(positions, key=lambda x: x[1]))
-  height = positions[highest_idx][1] + data["cheight"][highest_idx]
-
-  with open(path, "w") as f:
-    f.write(f"{data['WIDTH']} {height}\n")
-    f.write(f"{data['N']}\n")
-
-    for (x, y), h, w in zip(positions, data["cheight"], data["cwidth"]):
-      f.write(f"{w} {h} {x} {y}\n")
 
 
 def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=False, plot_intermediate=False, **kwargs):
@@ -102,27 +60,15 @@ def report_result(data: Dict[str, Union[int, List[int]]], result: Result, show=F
 
     if show:
       has_rotations = hasattr(result.solution[-1], "rotated")
+      solution_x = result.solution[-1].x
+      solution_y = result.solution[-1].y
 
-      if plot_intermediate:
-        solution_x = [r.x for r in result.solution]
-        solution_y = [r.y for r in result.solution]
-
-        if has_rotations:
-          rotated = [r.rotated for r in result.solution]
-        else:
-          rotated = [[False for _ in range(len(data["cwidth"]))] for _ in result.solution]
-
-        plot_multi_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
-      else:    
-        solution_x = result.solution[-1].x
-        solution_y = result.solution[-1].y
-
-        if has_rotations:
-          rotated = result.solution[-1].rotated
-        else:
-          rotated = [False for _ in range(len(data["cwidth"]))]
-      
-        plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
+      if has_rotations:
+        rotated = result.solution[-1].rotated
+      else:
+        rotated = [False for _ in range(len(data["cwidth"]))]
+    
+      plot_vlsi(data["cwidth"], data["cheight"], solution_x, solution_y, rotations=rotated, show=show, **kwargs)
   else:
     print("No partial solutions available")
 
@@ -138,14 +84,12 @@ if __name__ == "__main__":
                         required=True, help="Model(s) to use. Leave empty to use all.")
     parser.add_argument("--instances", "-i", nargs="*", type=str,
                         required=True, help="Instances(s) to load. Leave empty to use all.")
-    parser.add_argument("--wandb", "-wandb", action="store_true", help="Log data using wandb.")
     parser.add_argument("--csv", "-csv", nargs=1, type=str, help="Save csv files in specified directory.")
     parser.add_argument("--output", "-o", nargs=1, type=str, help="Save results files in specified directory.")
     parser.add_argument("--plot", "-p", action="store_true", help="Plot final result. Defaults to false.")
-    parser.add_argument("--plot-all", "-pall", action="store_true", help="Plot all results. Defaults to false.")
     parser.add_argument("--solver", "-solver", "-s", nargs=1, type=str, default=["chuffed"], choices=["chuffed", "gecode"],
                         help="Solver that Minizinc will use. Defaults to Chuffed.")
-    parser.add_argument("--free-search", "-f", action="store_true", help="Perform free search (more efficient on search_parameters). Defaults to false.")
+    parser.add_argument("--free-search", "-f", action="store_true", help="Perform free search. Defaults to false.")
     parser.add_argument("--timeout", "-timeout", "-t", type=int, default=300,
                         help="Execution time contraint in seconds. Defaults to 300s (5m).")
                         
@@ -172,18 +116,10 @@ if __name__ == "__main__":
         if not os.path.exists(args.output[0]):
           os.mkdir(args.output[0])
 
-      if args.wandb:
-        run = wandb.init(project='vlsi', entity='fatlads', tags=[m])
-        run.name = m
-        #custom x-axis
-        wandb.define_metric("instance number")
-        #set variables for which this metric holds
-        wandb.define_metric("*", step_metric='instance number')
-        config = wandb.config
-      
       #counter for custom step
-      instance_num = 1
       for i in instances:
+        instance_num = re.findall(r'(\d+)', i)[0]
+
         print("%s %s %s %s %s" % ("-" * 5, m, "-" * 3, i, "-" * 5))
 
         data = txt2dict(i)
@@ -201,22 +137,12 @@ if __name__ == "__main__":
                                     optimisation_level=1)
 
         #show report results
-        res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot, plot_intermediate=args.plot_all)
+        res = report_result(data, result, title="%s | %s" % (m, i), show=args.plot)
         solved_time = res[0]
         solutions = res[1]
         nodes = res[2]
         failures = res[3]
         
-        if args.wandb:
-          #log results
-          wandb.log({
-            "time taken": solved_time,
-            "solutions": solutions,
-            "nodes": nodes,
-            "failures": failures,
-            "instance number": instance_num
-          })
-
         if args.csv is not None:
           csv_writer.writerow([instance_num, solved_time, solutions, nodes, failures])
         
@@ -226,16 +152,9 @@ if __name__ == "__main__":
           y = result.solution[-1].y
           save_solution(path, data, list(zip(x, y)))
                   
-        instance_num += 1
-      
-      if args.wandb:
-        #finish run with this model, select next model
-        run.finish()
       if args.csv is not None:
         f.close()
-      #reset counter for custom step
-      instance_num = 1
-
+      
 
   except KeyboardInterrupt:
     f.close()
