@@ -5,13 +5,13 @@ from z3.z3 import Int, Not
 import time
 import numpy as np
 
-class SmtModel(object):
-  ROTATIONS = False
+class SatModel(object):
   """
   Sat model implementing some common logic between solvers such as input interface, output interface etc.
   """
+  ROTATIONS = False
 
-  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int, timeout: int = 300):
+  def __init__(self, width: int, cwidth: List[int], cheight: List[int], lb: int, ub: int, timeout=None):
     """Initialize solver and attributes
 
     Args:
@@ -23,7 +23,6 @@ class SmtModel(object):
     """    
     self.N = len(cwidth)
     self.WIDTH = width
-
     self.cwidth = cwidth
     self.cheight = cheight
     
@@ -32,33 +31,25 @@ class SmtModel(object):
     
     # build the board representation
     self.setup()
-    self.solver = z3.Solver()
 
+    self.remaining_time = timeout
+
+    self.solver = z3.Solver()
     self._solved_once = False
+    self._solved = False
+
     self.init_time = time.perf_counter()
     self.post_static_constraints()
     self.init_time = time.perf_counter() - self.init_time
 
     self.solved_time = -1
     self.setup_time = 0
-    self.remaining_time = timeout
 
   def setup(self):
     """
     Builds boards encodings:
-      * cboard - occupation of each circuit
-      * cx - column occupied by circuit c
-      * cy - row occupied by circuit c
-
-    Board is built as high as upper bounds goes so that it can be reused.
     """
-
-    # cx
-    self.cx = np.array([z3.Int(f"cx_{i}") for i in range(self.N)])
-    # cy
-    self.cy = np.array([z3.Int(f"cy_{i}") for i in range(self.N)])
-
-    self.HEIGHT = z3.Int('HEIGHT')
+    raise NotImplementedError
 
   def post_static_constraints(self):
     """
@@ -69,18 +60,14 @@ class SmtModel(object):
         NotImplementedError: If not overriden raises not implemented error
     """
     pass
-  
+
   @property
   def solved(self) -> bool:
     """
     Returns:
         bool: instance has been solved or not
     """
-    try:
-      self.solver.model()
-      return True
-    except:
-      return False
+    return self._solved
 
   def solve(self, height: int):
     """
@@ -92,21 +79,28 @@ class SmtModel(object):
     # setup time is time spent setting up before actually solving
     self.setup_time = 0
     # set the current height
+    self.HEIGHT = height
 
     # post dynamic constraints
     self.setup_time = time.perf_counter()
+    allowed_height = z3.And([self.a_h[h] for h in range(height)])
+    not_allowed_height = z3.Not(z3.Or([self.a_h[h] for h in range(height, self.HEIGHT_UB)]))
     
+    pre_requisites = [allowed_height]
+    if height < self.HEIGHT_UB:
+      pre_requisites.append(not_allowed_height)
+
     self.setup_time = time.perf_counter() - self.setup_time
 
-    # search for a solution
-    self.solved_time = time.perf_counter()
-    self.solver.add(self.HEIGHT <= height)
+    # search for a solution in remaining time (must be provided in ms)
     self.solver.set("timeout", int(self.remaining_time * 1000))
-    self.solver.check()
-    self.solved_time = time.perf_counter() - self.solved_time
 
-    self.remaining_time -= self.solved_time
+    self.solved_time = time.perf_counter()
+    self._solved = self.solver.check(*pre_requisites) == z3.sat
+    self.solved_time = time.perf_counter() - self.solved_time
     
+    self.remaining_time -= self.solved_time
+
     self._solved_once = True
 
   def _idxs_positions(self) -> List[Tuple[int, int]]:
@@ -142,6 +136,15 @@ class SmtModel(object):
         Tuple[List[int], List[int]]: Rectangles left-bottom x and y positions
     """
     return self.x, self.y
+
+  @property
+  def rotations(self) -> List[bool]:
+    """
+    Returns:
+      List[bool]: Wether a circuit has been rotated
+    """
+    if self.ROTATIONS:
+      raise NotImplementedError
 
   @property
   def time(self) -> Dict:

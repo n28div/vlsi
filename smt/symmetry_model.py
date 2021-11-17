@@ -39,13 +39,16 @@ class SymmetryModel(NaiveModel):
       constraints.append(self.flatpos_hor[i] == self.flatten_position(self.cy[i], self.WIDTH - self.cwidth[i]-self.cx[i]))
       constraints.append(self.flatpos_ver[i] == self.flatten_position(self.HEIGHT - self.cheight[i] - self.cy[i], self.cx[i]))
     return z3.And(constraints)
-    
+
+
   def _lex_lesseq(self, a, b) -> z3.BoolRef:
     """
     Less eq constraint implementation
     from https://digitalcommons.iwu.edu/cgi/viewcontent.cgi?article=1022&context=cs_honproj
     """
+    # base case: we arrived at the end of both list, they should be ordered otherwise we would have ended before
     constraints = list()
+
     constraints.append(z3_bLe(a[0], b[0]))
     
     for i in range(len(a) - 1):
